@@ -51,7 +51,7 @@ class TeacherHandleSubjectModel {
     try {
       const [rows] = await this.pool.query(
         `SELECT s.id, s.code, s.name 
-         FROM subject s 
+         FROM subjects s 
          JOIN teacher_handle_subject ths ON s.id = ths.subject_id 
          WHERE ths.teacher_id = ?`,
         [teacher_id]

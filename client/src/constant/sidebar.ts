@@ -15,7 +15,7 @@ export type SideBarProps = {
 
 export const DEFAULT_NAV_CONFIG: SideBarProps = {
   teacher: [
-    { path: "/teacher-dashboard", label: "Dashboard", icon: FaHome },
+    { path: "/teacher/dashboard", label: "Dashboard", icon: FaHome },
     { path: "/grade-management", label: "Grade Management", icon: FaGraduationCap },
   ],
   admin: [

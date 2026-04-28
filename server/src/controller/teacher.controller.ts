@@ -40,6 +40,22 @@ export async function getTeacherById(req: Request<{ id: string }>, res: Response
   }
 }
 
+export async function getTeacherByEmail(req: Request<{ email: string }>, res: Response) {
+  try {
+    const email = req.params.email;
+    const teacherService = new TeacherService(new TeacherModel(pool));
+    const teacher = await teacherService.getTeacherByEmail(email);
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, msg: "Teacher not found" });
+    }
+
+    res.status(200).json({ success: true, data: teacher });
+  } catch (e) {
+    res.status(500).json({ success: false, msg: `Error: ${e}` });
+  }
+}
+
 export async function createTeacher(req: Request, res: Response) {
   try {
     const { first_name, middle_name, last_name, email }: TeacherDTO = req.body;

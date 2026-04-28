@@ -37,11 +37,57 @@ export const authUser = async (req: Request<[], [], {email: string, password: st
     return res.status(200).json({
       msg: "Login successful",
       data: {
+        id: user.id,
         username: user.username,
         email: user.email,
         role: user.role
       }
     })
+  } catch (e) {
+    console.log(`Error: ${e}`)
+    return res.status(500).json({ msg: "Internal server Error" });
+  }
+}
+
+export const verifyAuthUser = async (req: Request, res: Response) => {
+  try {
+    const decodedUser = (req as any).user as { email?: string } | undefined;
+
+    if (!decodedUser?.email) {
+      return res.status(401).json({ msg: "Unauthorized" });
+    }
+
+    const userModel = new UserModel(pool);
+    const user = await userModel.getUserByEmail(decodedUser.email);
+
+    if (!user) {
+      return res.status(401).json({ msg: "Session expired" });
+    }
+
+    return res.status(200).json({
+      msg: "Session valid",
+      data: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (e) {
+    console.log(`Error: ${e}`)
+    return res.status(500).json({ msg: "Internal server Error" });
+  }
+}
+
+export const logoutUser = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("userAuth", {
+      sameSite: "lax",
+      httpOnly: true,
+      secure: false,
+    });
+
+    return res.status(200).json({ msg: "Logout successful" });
   } catch (e) {
     console.log(`Error: ${e}`)
     return res.status(500).json({ msg: "Internal server Error" });

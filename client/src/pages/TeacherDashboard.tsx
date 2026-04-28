@@ -20,34 +20,58 @@ export default function TeacherDashboard() {
   const { user } = useContext(UserContext);
   const [classes, setClasses] = useState<TeacherClass[]>([]);
   const [subjects, setSubjects] = useState<TeacherSubject[]>([]);
+  const [handledClasses, setHandledClasses] = useState<TeacherClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchTeacherData();
-    }
+    if (!user) return;
+
+    const load = async () => {
+      try {
+        if (user.role === "teacher") {
+          // resolve teacher record by email to get teachers.id
+          const tRes = await axios.get(
+            `http://localhost:7000/teachers/email/${encodeURIComponent(user.email)}`,
+            { withCredentials: true },
+          );
+          const teacher = tRes.data?.data;
+          const teacherId = teacher?.id ?? user.id;
+          await fetchTeacherData(teacherId);
+        } else {
+          // non-teacher roles: use user.id
+          await fetchTeacherData(user.id);
+        }
+      } catch (err) {
+        // fallback to using user.id
+        await fetchTeacherData(user.id);
+      }
+    };
+
+    load();
   }, [user?.id]);
 
-  const fetchTeacherData = async () => {
+  const fetchTeacherData = async (teacherId?: number) => {
     try {
       setLoading(true);
-      const [classRes, subjectRes] = await Promise.all([
+      const id = teacherId ?? user?.id;
+      const [classRes, subjectRes, handledRes] = await Promise.all([
         axios.get(
-          `http://localhost:7000/class-teachers/teacher/${user?.id}?limit=1000`,
-          {
-            withCredentials: true,
-          },
+          `http://localhost:7000/class-teachers/teacher/${id}?limit=1000`,
+          { withCredentials: true },
         ),
         axios.get(
-          `http://localhost:7000/teacher-subjects/teacher/${user?.id}?limit=1000`,
-          {
-            withCredentials: true,
-          },
+          `http://localhost:7000/teacher-subjects/teacher/${id}?limit=1000`,
+          { withCredentials: true },
+        ),
+        axios.get(
+          `http://localhost:7000/class-subjects/teacher/${id}?limit=1000`,
+          { withCredentials: true },
         ),
       ]);
       setClasses(classRes.data?.data || []);
       setSubjects(subjectRes.data?.data || []);
+      setHandledClasses(handledRes.data?.data || []);
       setError(null);
     } catch (e) {
       const errorMsg = axios.isAxiosError(e)
@@ -192,6 +216,58 @@ export default function TeacherDashboard() {
         ) : (
           <div className="p-8 text-center text-slate-500">
             <p className="font-medium">No subjects assigned</p>
+          </div>
+        )}
+      </div>
+
+      {/* Classes With My Subjects Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mt-8">
+        <div className="p-6 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+          <h2 className="text-2xl font-bold text-slate-900">
+            Classes With My Subjects
+          </h2>
+        </div>
+        {handledClasses.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+                    Class
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+                    Section
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+                    Year
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+                    Level
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {handledClasses.map((cls) => (
+                  <tr
+                    key={cls.id}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-slate-900">{cls.name}</td>
+                    <td className="px-6 py-4 text-slate-600">{cls.section}</td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {cls.school_year}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {cls.school_level}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-slate-500">
+            <p className="font-medium">No classes contain your subjects</p>
           </div>
         )}
       </div>

@@ -18,10 +18,15 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import GradeManagement from "./pages/GradeManagement";
 
 // super Admin
-import { AdminDashboard, ManageClasses, ManageUser } from "./pages/superAdmin";
-import ManageTeachers from "./pages/superAdmin/ManageTeachers";
-import ManageStudents from "./pages/superAdmin/ManageStudents";
-import ManageSubjects from "./pages/superAdmin/ManageSubjects";
+import {
+  AdminDashboard,
+  ManageClasses,
+  ManageUser,
+  ManageTeachers,
+  ManageStudents,
+  ManageSubjects,
+  SuperAdminDashboard,
+} from "./pages/admin";
 
 export default function App() {
   return (
@@ -32,22 +37,36 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
 
-              <Route element={<ProtectedRoutes />}>
+              <Route
+                element={
+                  <ProtectedRoutes allowedRoles={["admin", "super_admin"]} />
+                }
+              >
                 <Route path="/" element={<MasterLayout />}>
-                  {/* super admin routes */}
-                  <Route
-                    path="/superadmin/dashboard"
-                    element={<AdminDashboard />}
-                  />
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/manage-users" element={<ManageUser />} />
                   <Route path="/manage-classes" element={<ManageClasses />} />
                   <Route path="/manage-teachers" element={<ManageTeachers />} />
                   <Route path="/manage-students" element={<ManageStudents />} />
                   <Route path="/manage-subjects" element={<ManageSubjects />} />
+                </Route>
+              </Route>
 
-                  {/* teacher Routes */}
+              <Route
+                element={<ProtectedRoutes allowedRoles={["super_admin"]} />}
+              >
+                <Route path="/" element={<MasterLayout />}>
                   <Route
-                    path="/teacher-dashboard"
+                    path="/superadmin/dashboard"
+                    element={<SuperAdminDashboard />}
+                  />
+                </Route>
+              </Route>
+
+              <Route element={<ProtectedRoutes allowedRoles={["teacher"]} />}>
+                <Route path="/" element={<MasterLayout />}>
+                  <Route
+                    path="/teacher/dashboard"
                     element={<TeacherDashboard />}
                   />
                   <Route

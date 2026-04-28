@@ -1,9 +1,11 @@
 import { useContext } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
 import { UserContext } from "../../context/userContext";
 
 // context
 import { useSideBar } from "../../hooks/useSidebar";
+import { useToast, useToastHelper } from "../../context/ToastContext";
 
 // Constant
 import { DEFAULT_NAV_CONFIG } from "../../constant/sidebar";
@@ -11,6 +13,7 @@ import { DEFAULT_NAV_CONFIG } from "../../constant/sidebar";
 // Type
 import type { SideBarProps } from "../../constant/sidebar";
 import type { ROLE } from "../../constant/user";
+import { FaSignOutAlt } from "react-icons/fa";
 
 export default function SideBar({
   teacher = DEFAULT_NAV_CONFIG.teacher,
@@ -19,9 +22,12 @@ export default function SideBar({
 }: Partial<SideBarProps> = {}) {
   const userContext = useContext(UserContext);
   const user = userContext?.user;
+  const setUser = userContext?.setUser;
   const userRole = user?.role as ROLE;
 
   const { isOpen } = useSideBar();
+  const toast = useToastHelper();
+  const { addToast } = useToast();
 
   if (!user) {
     return (
@@ -33,6 +39,37 @@ export default function SideBar({
 
   const navConfig = { teacher, admin, super_admin };
   const navItems = navConfig[userRole] || [];
+
+  async function performLogout() {
+    try {
+      await axios.post(
+        "http://localhost:7000/logout",
+        {},
+        { withCredentials: true },
+      );
+    } catch (error) {
+      console.error("Logout request failed:", error);
+    } finally {
+      localStorage.removeItem("userCredential");
+      setUser?.(null);
+      toast.success("Logged out successfully");
+      window.location.replace("/login");
+    }
+  }
+
+  function handleLogout() {
+    addToast({
+      type: "error",
+      message: "Are you sure you want to log out?",
+      duration: 5000,
+      action: {
+        label: "Confirm",
+        onClick: async () => {
+          await performLogout();
+        },
+      },
+    });
+  }
 
   return (
     <aside
@@ -83,6 +120,20 @@ export default function SideBar({
       </nav>
 
       <footer className="border-t border-slate-700 p-4 text-center text-xs text-slate-400">
+        <div className="px-2 pb-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-4 rounded-lg px-4 py-3 text-left text-rose-300 transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-100"
+          >
+            <FaSignOutAlt className="text-lg flex-shrink-0" />
+            <span
+              className={`transition-all duration-300 ${isOpen ? "opacity-100 w-auto" : "opacity-0 w-0 hidden"} font-medium text-sm`}
+            >
+              Logout
+            </span>
+          </button>
+        </div>
         <p>© 2026 Grade Sink</p>
       </footer>
     </aside>

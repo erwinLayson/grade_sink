@@ -52,6 +52,18 @@ export async function getSubjectsByClass(req: Request<{ classId: string }>, res:
   }
 }
 
+export async function getClassesByTeacherSubjects(req: Request<{ teacherId: string }>, res: Response) {
+  try {
+    const teacherId = parseInt(req.params.teacherId);
+    const csService = new ClassSubjectService(new ClassSubjectModel(pool));
+    const classes = await csService.getClassesByTeacherId(teacherId);
+
+    res.status(200).json({ success: true, data: classes });
+  } catch (e) {
+    res.status(500).json({ success: false, msg: `Error: ${e}` });
+  }
+}
+
 export async function createClassSubject(req: Request, res: Response) {
   try {
     const { class_id, subject_id }: ClassSubjectDTO = req.body;

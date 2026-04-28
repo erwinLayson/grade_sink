@@ -86,6 +86,24 @@ class ClassSubjectModel {
       throw new Error(`${e}`);
     }
   }
+
+  async getClassesByTeacherId(teacher_id: number): Promise<any[]> {
+    try {
+      const [rows] = await this.pool.query(
+        `SELECT DISTINCT c.id, c.name, c.section, c.school_year, c.school_level
+         FROM class c
+         JOIN class_subjects cs ON c.id = cs.class_id
+         JOIN teacher_handle_subject ths ON cs.subject_id = ths.subject_id
+         WHERE ths.teacher_id = ?
+         ORDER BY c.id DESC`,
+        [teacher_id]
+      );
+      return rows as any[];
+    } catch (e) {
+      console.log(`....Fetching classes by teacher through subjects ${e}`);
+      throw new Error(`${e}`);
+    }
+  }
 }
 
 export default ClassSubjectModel;

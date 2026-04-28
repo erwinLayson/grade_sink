@@ -72,6 +72,22 @@ class ClassSubjectService {
       throw new Error(`Error: ${e}`);
     }
   }
+
+  async getClassesByTeacherId(teacher_id: number): Promise<any[]> {
+    try {
+      const classes = await this.classSubjectModel.getClassesByTeacherId(teacher_id);
+      return classes.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        section: c.section,
+        school_year: c.school_year,
+        school_level: c.school_level
+      }));
+    } catch (e) {
+      console.log(`Error ${e}`);
+      throw new Error(`Error: ${e}`);
+    }
+  }
 }
 
 export default ClassSubjectService;

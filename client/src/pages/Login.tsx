@@ -5,6 +5,7 @@ import axios from "axios";
 // Custom hooks
 import useUser from "../hooks/useUser";
 import { useToastHelper } from "../context/ToastContext";
+import { getDashboardRoute } from "../utils/dashboardRoute";
 
 export default function Login() {
   const [userEmail, setUserEmail] = useState<string>("");
@@ -18,8 +19,22 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log(`user `, user);
-  }, [user]);
+    if (!user) {
+      return;
+    }
+
+    const dashboardRoute = getDashboardRoute(user.role);
+
+    if (dashboardRoute) {
+      navigate(dashboardRoute, { replace: true });
+      return;
+    }
+
+    toast.error("Your account role does not have a dashboard route.");
+    localStorage.removeItem("userCredential");
+    setUser(null);
+    navigate("/login", { replace: true });
+  }, [navigate, setUser, toast, user]);
 
   async function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,7 +68,17 @@ export default function Login() {
       setUserEmail("");
       setUserPasword("");
       toast.success("Login successful!");
-      navigate("/");
+
+      const dashboardRoute = getDashboardRoute(userCredential.role);
+      if (dashboardRoute) {
+        navigate(dashboardRoute, { replace: true });
+        return;
+      }
+
+      toast.error("Your account role does not have a dashboard route.");
+      localStorage.removeItem("userCredential");
+      setUser(null);
+      navigate("/login", { replace: true });
     } catch (e) {
       if (axios.isAxiosError(e)) {
         return toast.error(e.response?.data?.msg || "Login failed");
