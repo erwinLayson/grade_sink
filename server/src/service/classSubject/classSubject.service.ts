@@ -49,10 +49,14 @@ class ClassSubjectService {
   async getSubjectsByClassId(class_id: number): Promise<ClassSubjectResponse[]> {
     try {
       const classSubjects = await this.classSubjectModel.getSubjectsByClassId(class_id);
-      return classSubjects.map(cs => ({
+      return classSubjects.map((cs: any) => ({
         id: cs.id,
         class_id: cs.class_id,
-        subject_id: cs.subject_id
+        subject_id: cs.subject_id,
+        code: cs.code,
+        name: cs.name,
+        teacher_id: cs.teacher_id ?? null,
+        teacher_name: cs.teacher_name ?? null,
       }));
     } catch (e) {
       console.log(`Error ${e}`);

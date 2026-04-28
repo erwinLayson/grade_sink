@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaTimes } from "react-icons/fa";
 import axios from "axios";
-import { useToastHelper } from "../../context/ToastContext";
+import { useToast, useToastHelper } from "../../context/ToastContext";
 
 interface Teacher {
   id: number;
@@ -33,6 +33,7 @@ export default function ManageTeachers() {
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
 
   const toast = useToastHelper();
+  const { addToast } = useToast();
 
   // Fetch teachers
   useEffect(() => {
@@ -122,8 +123,9 @@ export default function ManageTeachers() {
   }
 
   async function handleDelete(id: number) {
-    // Create a simple confirm-like UI using toast with action
-    toast.error("Delete this teacher?", {
+    addToast({
+      type: "error",
+      message: "Delete this teacher?",
       duration: 5000,
       action: {
         label: "Confirm",

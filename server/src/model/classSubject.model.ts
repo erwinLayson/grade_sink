@@ -49,7 +49,27 @@ class ClassSubjectModel {
 
   async getSubjectsByClassId(class_id: number): Promise<ClassSubject[]> {
     try {
-      const [rows] = await this.pool.query("SELECT * FROM class_subjects WHERE class_id = ?", [class_id]);
+      const [rows] = await this.pool.query(
+        `SELECT
+          cs.id,
+          cs.class_id,
+          cs.subject_id,
+          s.code,
+          s.name,
+          th.teacher_id,
+          CONCAT(COALESCE(t.first_name, ''), CASE WHEN t.last_name IS NOT NULL THEN CONCAT(' ', t.last_name) ELSE '' END) AS teacher_name
+        FROM class_subjects cs
+        INNER JOIN subjects s ON s.id = cs.subject_id
+        LEFT JOIN (
+          SELECT subject_id, MIN(teacher_id) AS teacher_id
+          FROM teacher_handle_subject
+          GROUP BY subject_id
+        ) th ON th.subject_id = cs.subject_id
+        LEFT JOIN teachers t ON t.id = th.teacher_id
+        WHERE cs.class_id = ?
+        ORDER BY cs.id DESC`,
+        [class_id]
+      );
       return rows as ClassSubject[];
     } catch (e) {
       console.log(`....Fetching subjects by class ${e}`);

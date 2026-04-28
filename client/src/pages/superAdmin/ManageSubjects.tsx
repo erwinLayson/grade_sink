@@ -24,6 +24,7 @@ interface Teacher {
 
 interface SubjectWithTeacherCount extends Subject {
   teacher_count?: number;
+  class_count?: number;
 }
 
 interface SubjectTeacher {
@@ -77,20 +78,25 @@ export default function ManageSubjects() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [subjectRes, teacherRes, teacherSubjectRes] = await Promise.all([
-        axios.get("http://localhost:7000/subjects?limit=1000", {
-          withCredentials: true,
-        }),
-        axios.get("http://localhost:7000/teachers?limit=1000", {
-          withCredentials: true,
-        }),
-        axios.get("http://localhost:7000/teacher-subjects?limit=1000", {
-          withCredentials: true,
-        }),
-      ]);
+      const [subjectRes, teacherRes, teacherSubjectRes, classSubjectRes] =
+        await Promise.all([
+          axios.get("http://localhost:7000/subjects?limit=1000", {
+            withCredentials: true,
+          }),
+          axios.get("http://localhost:7000/teachers?limit=1000", {
+            withCredentials: true,
+          }),
+          axios.get("http://localhost:7000/teacher-subjects?limit=1000", {
+            withCredentials: true,
+          }),
+          axios.get("http://localhost:7000/class-subjects?limit=1000", {
+            withCredentials: true,
+          }),
+        ]);
 
       const allTeachers = teacherRes.data?.data || [];
       const allTeacherSubjects = teacherSubjectRes.data?.data || [];
+      const allClassSubjects = classSubjectRes.data?.data || [];
 
       // Count teachers per subject
       const subjectsWithCount = (subjectRes.data?.data || []).map(
@@ -98,6 +104,9 @@ export default function ManageSubjects() {
           ...subject,
           teacher_count: allTeacherSubjects.filter(
             (ts: any) => ts.subject_id === subject.id,
+          ).length,
+          class_count: allClassSubjects.filter(
+            (cs: any) => cs.subject_id === subject.id,
           ).length,
         }),
       );
@@ -697,44 +706,51 @@ export default function ManageSubjects() {
         {filteredSubjects.map((subject) => (
           <div
             key={subject.id}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
+            className="group relative overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)]"
           >
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-400 via-fuchsia-400 to-rose-300" />
             {/* Card clickable area */}
             <div
               onClick={() => handleOpenDetail(subject)}
-              className="p-6 hover:bg-gray-50 transition"
+              className="p-6 pt-7 cursor-pointer"
             >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-600 uppercase">
-                    {subject.code}
-                  </h3>
-                  <h2 className="text-xl font-bold text-gray-800 mt-1">
-                    {subject.name}
-                  </h2>
-                </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {subject.code}
+                </p>
+                <h2 className="text-xl font-semibold text-slate-900 mt-1">
+                  {subject.name}
+                </h2>
               </div>
 
-              <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-                <p className="text-2xl font-bold text-purple-600">
-                  {subject.teacher_count || 0}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">Teachers Assigned</p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-violet-100 bg-violet-50 p-3">
+                  <p className="text-2xl font-bold text-violet-700">
+                    {subject.teacher_count || 0}
+                  </p>
+                  <p className="text-xs text-slate-600">Teachers</p>
+                </div>
+                <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                  <p className="text-2xl font-bold text-amber-700">
+                    {subject.class_count || 0}
+                  </p>
+                  <p className="text-xs text-slate-600">Classes</p>
+                </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3">
+            <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-2 opacity-0 translate-y-1 pointer-events-none transition group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
               <button
                 onClick={() => handleUpdateSubject(subject)}
-                className="text-blue-600 hover:text-blue-800"
+                className="inline-flex items-center justify-center rounded-lg border border-violet-100 bg-violet-50 p-2 text-violet-700 hover:bg-violet-100 transition"
                 title="Edit"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={() => handleDeleteSubject(subject.id)}
-                className="text-red-600 hover:text-red-800"
+                className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100 transition"
                 title="Delete"
               >
                 <FaTrash />

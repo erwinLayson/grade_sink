@@ -118,7 +118,14 @@ export default function ManageClasses() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [classRes, teacherRes, studentRes, subjectRes] = await Promise.all([
+      const [
+        classRes,
+        teacherRes,
+        studentRes,
+        subjectRes,
+        classStudentRes,
+        classSubjectRes,
+      ] = await Promise.all([
         axios.get("http://localhost:7000/classes?limit=1000", {
           withCredentials: true,
         }),
@@ -131,14 +138,49 @@ export default function ManageClasses() {
         axios.get("http://localhost:7000/subjects?limit=1000", {
           withCredentials: true,
         }),
+        axios.get("http://localhost:7000/class-students?limit=1000", {
+          withCredentials: true,
+        }),
+        axios.get("http://localhost:7000/class-subjects?limit=1000", {
+          withCredentials: true,
+        }),
       ]);
 
       const allTeachers = teacherRes.data?.data || [];
+      const teacherNameMap = new Map<number, string>(
+        allTeachers.map((teacher: any) => [
+          teacher.id,
+          `${teacher.first_name} ${teacher.last_name}`,
+        ]),
+      );
+
+      const classStudentCounts = (classStudentRes.data?.data || []).reduce(
+        (acc: Record<number, number>, cs: any) => {
+          if (cs.class_id) {
+            acc[cs.class_id] = (acc[cs.class_id] || 0) + 1;
+          }
+          return acc;
+        },
+        {},
+      );
+
+      const classSubjectCounts = (classSubjectRes.data?.data || []).reduce(
+        (acc: Record<number, number>, cs: any) => {
+          if (cs.class_id) {
+            acc[cs.class_id] = (acc[cs.class_id] || 0) + 1;
+          }
+          return acc;
+        },
+        {},
+      );
+
       const allClasses = (classRes.data?.data || []).map((cls: Class) => ({
         ...cls,
-        adviser_name: allTeachers.find((t: any) => t.id === cls.teacher_id)
-          ? `${allTeachers.find((t: any) => t.id === cls.teacher_id).first_name} ${allTeachers.find((t: any) => t.id === cls.teacher_id).last_name}`
+        adviser_name: cls.teacher_id
+          ? teacherNameMap.get(cls.teacher_id) || "Unassigned"
           : "Unassigned",
+        student_count: classStudentCounts[cls.id] || 0,
+        subject_count: classSubjectCounts[cls.id] || 0,
       }));
 
       setClasses(allClasses);
@@ -878,51 +920,56 @@ export default function ManageClasses() {
         {filteredClasses.map((cls) => (
           <div
             key={cls.id}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden"
+            className="group relative overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)]"
           >
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-emerald-400 to-amber-300" />
             {/* Card clickable area */}
             <div
               onClick={() => handleOpenDetail(cls)}
-              className="p-6 hover:bg-gray-50 transition"
+              className="p-6 pt-7 cursor-pointer"
             >
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
-                {cls.name}
-              </h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Section {cls.section} | {cls.school_year}
-              </p>
-              <p className="text-gray-600 text-sm mb-4">
-                <span className="font-semibold">Adviser:</span>{" "}
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900">
+                  {cls.name}
+                </h3>
+                <p className="text-sm text-slate-600 mt-1">
+                  Section {cls.section} • {cls.school_year}
+                </p>
+              </div>
+
+              <div className="mt-4 text-sm text-slate-600">
+                <span className="font-semibold text-slate-700">Adviser:</span>{" "}
                 {cls.adviser_name}
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="bg-blue-50 p-3 rounded">
-                  <p className="text-2xl font-bold text-blue-600">
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-sky-100 bg-sky-50 p-3">
+                  <p className="text-2xl font-bold text-sky-700">
                     {cls.student_count || 0}
                   </p>
-                  <p className="text-xs text-gray-600">Students</p>
+                  <p className="text-xs text-slate-600">Students</p>
                 </div>
-                <div className="bg-green-50 p-3 rounded">
-                  <p className="text-2xl font-bold text-green-600">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                  <p className="text-2xl font-bold text-emerald-700">
                     {cls.subject_count || 0}
                   </p>
-                  <p className="text-xs text-gray-600">Subjects</p>
+                  <p className="text-xs text-slate-600">Subjects</p>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3">
+            <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-2 opacity-0 translate-y-1 pointer-events-none transition group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
               <button
                 onClick={() => handleUpdateClass(cls)}
-                className="text-blue-600 hover:text-blue-800"
+                className="inline-flex items-center justify-center rounded-lg border border-sky-100 bg-sky-50 p-2 text-sky-700 hover:bg-sky-100 transition"
                 title="Edit"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={() => handleDeleteClass(cls.id)}
-                className="text-red-600 hover:text-red-800"
+                className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100 transition"
                 title="Delete"
               >
                 <FaTrash />

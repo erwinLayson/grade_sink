@@ -5,7 +5,7 @@ import useUser from "../../hooks/useUser";
 interface DashboardStats {
   totalTeachers: number;
   totalClasses: number;
-  totalSubjects: number;
+  totalStudents: number;
   averageGrade: number;
 }
 
@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalTeachers: 0,
     totalClasses: 0,
-    totalSubjects: 0,
+    totalStudents: 0,
     averageGrade: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -24,20 +24,31 @@ export default function AdminDashboard() {
       try {
         setIsLoading(true);
         // Fetch dashboard statistics
-        const [teachersRes, classesRes, subjectsRes] = await Promise.all([
-          axios.get("http://localhost:7000/teachers", {
+        const [teachersRes, classesRes, studentsRes] = await Promise.all([
+          axios.get("http://localhost:7000/teachers?limit=1000", {
             withCredentials: true,
           }),
-          axios.get("http://localhost:7000/classes", { withCredentials: true }),
-          axios.get("http://localhost:7000/subjects", {
+          axios.get("http://localhost:7000/classes?limit=1000", {
+            withCredentials: true,
+          }),
+          axios.get("http://localhost:7000/students?limit=1000", {
             withCredentials: true,
           }),
         ]);
 
         setStats({
-          totalTeachers: teachersRes.data?.length || 0,
-          totalClasses: classesRes.data?.length || 0,
-          totalSubjects: subjectsRes.data?.length || 0,
+          totalTeachers:
+            teachersRes.data?.pagination?.total ??
+            teachersRes.data?.data?.length ??
+            0,
+          totalClasses:
+            classesRes.data?.pagination?.total ??
+            classesRes.data?.data?.length ??
+            0,
+          totalStudents:
+            studentsRes.data?.pagination?.total ??
+            studentsRes.data?.data?.length ??
+            0,
           averageGrade: 85.5, // Placeholder
         });
       } catch (error) {
@@ -108,19 +119,19 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Subjects Card */}
+        {/* Students Card */}
         <div className="bg-white rounded-xl shadow-sm border-l-4 border-purple-600 p-6 hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-slate-600 text-sm font-medium">
-                Total Subjects
+                Total Students
               </p>
               <p className="text-3xl font-bold text-slate-900 mt-1">
-                {stats.totalSubjects}
+                {stats.totalStudents}
               </p>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 text-xl">
-              📖
+              🎓
             </div>
           </div>
         </div>
