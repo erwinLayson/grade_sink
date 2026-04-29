@@ -66,17 +66,41 @@ export async function getClassesByTeacherSubjects(req: Request<{ teacherId: stri
 
 export async function createClassSubject(req: Request, res: Response) {
   try {
-    const { class_id, subject_id }: ClassSubjectDTO = req.body;
+    const { class_id, subject_id, teacher_id }: ClassSubjectDTO = req.body;
 
     if (!class_id || !subject_id) {
       return res.status(400).json({ success: false, msg: "Class ID and Subject ID are required" });
     }
 
-    const csService = new ClassSubjectService(new ClassSubjectModel(pool));
-    const result = await csService.createClassSubject({ class_id, subject_id });
-    
-    if (result) {
-      return res.status(201).json({ success: true, msg: "Subject added to class successfully", data: { id: result } });
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const csService = new ClassSubjectService(new ClassSubjectModel(connection as unknown as typeof pool));
+      const result = await csService.createClassSubject({ class_id, subject_id });
+
+      if (teacher_id) {
+        await connection.query(
+          `INSERT INTO class_teacher (class_id, teacher_id)
+           SELECT ?, ?
+           WHERE NOT EXISTS (
+             SELECT 1 FROM class_teacher WHERE class_id = ? AND teacher_id = ?
+           )`,
+          [class_id, teacher_id, class_id, teacher_id],
+        );
+      }
+
+      await connection.commit();
+
+      if (result) {
+        return res.status(201).json({ success: true, msg: "Subject added to class successfully", data: { id: result } });
+      }
+    } catch (e) {
+      await connection.rollback();
+      throw e;
+    } finally {
+      connection.release();
     }
   } catch (e) {
     res.status(500).json({ success: false, msg: `Error: ${e}` });

@@ -111,6 +111,14 @@ export default function ManageClasses() {
   const toast = useToastHelper();
   const { addToast } = useToast();
 
+  const totalClasses = classes.length;
+  const totalTeachers = teachers.length;
+  const assignedClasses = classes.filter((cls) => cls.teacher_id).length;
+  const totalStudents = classes.reduce(
+    (sum, cls) => sum + (cls.student_count || 0),
+    0,
+  );
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -511,41 +519,66 @@ export default function ManageClasses() {
   }
 
   if (loading)
-    return <div className="p-6 text-center text-lg">Loading classes...</div>;
+    return (
+      <div className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-3xl items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 py-20 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 animate-pulse rounded-2xl bg-slate-200" />
+            <p className="text-lg font-semibold text-slate-900">
+              Loading classes...
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Preparing class records, teachers, students, and subjects.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
 
   if (selectedClassDetail) {
     return (
-      <article className="p-6 bg-gray-50 min-h-screen">
+      <article className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-white px-4 py-6 sm:px-6 lg:px-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-100/70 to-transparent" />
+        <div className="pointer-events-none absolute -left-24 top-24 h-64 w-64 rounded-full bg-sky-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 top-40 h-64 w-64 rounded-full bg-emerald-200/30 blur-3xl" />
         {/* Modal for adding students/subjects */}
         <div
           className={`fixed ${
             openModal ? "block opacity-100" : "hidden opacity-0"
-          } z-10 h-screen top-0 left-0 right-0 grid place-items-center bg-gray-300/40 transition-all overflow-y-auto`}
+          } z-10 h-screen top-0 left-0 right-0 grid place-items-center bg-slate-950/50 px-4 transition-all overflow-y-auto backdrop-blur-sm`}
         >
           <form
             onSubmit={
               modalType === "addStudent" ? handleAddStudent : handleAddSubject
             }
-            className="shadow-lg bg-white rounded-md p-5 w-full max-w-md relative my-8"
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)] my-8"
           >
-            <div className="grid place-items-center">
-              <h1 className="text-xl font-bold">
-                {modalType === "addStudent" ? "Add Student" : "Add Subject"}
-              </h1>
+            <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50 to-emerald-50 px-6 py-5">
+              <div className="grid place-items-center text-center">
+                <h1 className="text-2xl font-bold text-slate-900">
+                  {modalType === "addStudent" ? "Add Student" : "Add Subject"}
+                </h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  Keep the class organized with clear student and subject
+                  assignments.
+                </p>
+              </div>
               <span
-                className="p-2 absolute top-0 right-0 cursor-pointer text-gray-300 hover:text-black"
+                className="absolute right-4 top-4 cursor-pointer rounded-full border border-slate-200 bg-white p-2 text-slate-400 shadow-sm transition hover:border-slate-300 hover:text-slate-700"
                 onClick={handleCloseModal}
               >
-                <FaTimes className="text-lg" />
+                <FaTimes className="text-sm" />
               </span>
             </div>
 
-            <article className="mt-5 space-y-3">
+            <article className="space-y-4 px-6 py-6">
               {modalType === "addStudent" && (
                 <div>
-                  <label className="text-base">Student *</label>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Student *
+                  </label>
                   <select
-                    className="w-full border border-gray-300 p-2 rounded-md"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
                     value={selectedStudent}
                     onChange={(e) => setSelectedStudent(e.target.value)}
                     required
@@ -568,9 +601,11 @@ export default function ManageClasses() {
               {modalType === "addSubject" && (
                 <>
                   <div>
-                    <label className="text-base">Subject *</label>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Subject *
+                    </label>
                     <select
-                      className="w-full border border-gray-300 p-2 rounded-md"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
                       value={selectedSubject}
                       onChange={handleSubjectChange}
                       required
@@ -590,9 +625,11 @@ export default function ManageClasses() {
                   </div>
                   {subjectTeachers.length > 0 && (
                     <div>
-                      <label className="text-base">Teacher *</label>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        Teacher *
+                      </label>
                       <select
-                        className="w-full border border-gray-300 p-2 rounded-md"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
                         value={selectedSubjectTeacher}
                         onChange={(e) =>
                           setSelectedSubjectTeacher(e.target.value)
@@ -613,7 +650,7 @@ export default function ManageClasses() {
 
               <button
                 type="submit"
-                className="w-full mt-5 bg-green-600 hover:bg-green-700 text-white rounded-md p-2 font-semibold transition"
+                className="mt-2 w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 active:scale-[0.99]"
               >
                 {modalType === "addStudent" ? "Add Student" : "Add Subject"}
               </button>
@@ -625,20 +662,106 @@ export default function ManageClasses() {
         <div className="mb-6 flex items-center gap-4">
           <button
             onClick={handleCloseDetail}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700"
           >
             <FaArrowLeft /> Back to Classes
           </button>
         </div>
 
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            {selectedClassDetail.name} - {selectedClassDetail.section}
-          </h1>
-          <p className="text-gray-600">
-            Year: {selectedClassDetail.school_year} | Level:{" "}
-            {selectedClassDetail.school_level}
-          </p>
+        <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50 to-emerald-50 px-6 py-6 sm:px-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">
+                  Class Details
+                </p>
+                <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                  {selectedClassDetail.name} - {selectedClassDetail.section}
+                </h1>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+                  Year {selectedClassDetail.school_year} •{" "}
+                  {selectedClassDetail.school_level}
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 lg:min-w-[520px]">
+                <div className="rounded-2xl border border-sky-100 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Students
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    {classStudents.length}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Subjects
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    {classSubjects.length}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Teachers
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    {totalTeachers}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Classes
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    {totalClasses}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-6 sm:px-8">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Adviser
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">
+                  {selectedClassDetail.teacher_id
+                    ? teachers.find(
+                        (teacher) =>
+                          teacher.id === selectedClassDetail.teacher_id,
+                      )?.first_name || "Unassigned"
+                    : "Unassigned"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Assigned
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">
+                  {assignedClasses}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Students total
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">
+                  {totalStudents}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Level
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900 capitalize">
+                  {selectedClassDetail.school_level}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Students Section */}
@@ -916,60 +1039,88 @@ export default function ManageClasses() {
       </div>
 
       {/* Class Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredClasses.map((cls) => (
           <div
             key={cls.id}
-            className="group relative overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)]"
+            className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,0.12)]"
           >
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-emerald-400 to-amber-300" />
             {/* Card clickable area */}
             <div
               onClick={() => handleOpenDetail(cls)}
-              className="p-6 pt-7 cursor-pointer"
+              className="cursor-pointer p-6"
             >
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  {cls.name}
-                </h3>
-                <p className="text-sm text-slate-600 mt-1">
-                  Section {cls.section} • {cls.school_year}
-                </p>
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">
+                    {cls.school_level}
+                  </p>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+                    {cls.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Section {cls.section} · {cls.school_year}
+                  </p>
+                </div>
+
+                <div className="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Adviser
+                  </p>
+                  <p className="mt-1 max-w-[10rem] truncate text-sm font-semibold text-slate-900">
+                    {cls.adviser_name}
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-4 text-sm text-slate-600">
-                <span className="font-semibold text-slate-700">Adviser:</span>{" "}
-                {cls.adviser_name}
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-sky-100 bg-sky-50 p-3">
-                  <p className="text-2xl font-bold text-sky-700">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
+                  <p className="text-3xl font-bold leading-none text-sky-700">
                     {cls.student_count || 0}
                   </p>
-                  <p className="text-xs text-slate-600">Students</p>
+                  <p className="mt-2 text-sm font-medium text-slate-600">
+                    Students
+                  </p>
                 </div>
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                  <p className="text-2xl font-bold text-emerald-700">
+                <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
+                  <p className="text-3xl font-bold leading-none text-emerald-700">
                     {cls.subject_count || 0}
                   </p>
-                  <p className="text-xs text-slate-600">Subjects</p>
+                  <p className="mt-2 text-sm font-medium text-slate-600">
+                    Subjects
+                  </p>
                 </div>
               </div>
             </div>
 
+            <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
+              <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                Tap to view details
+              </span>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  cls.teacher_id
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-amber-50 text-amber-700"
+                }`}
+              >
+                {cls.teacher_id ? "Assigned" : "Unassigned"}
+              </span>
+            </div>
+
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-2 opacity-0 translate-y-1 pointer-events-none transition group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+            <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-1 opacity-0 translate-y-1 pointer-events-none transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
               <button
                 onClick={() => handleUpdateClass(cls)}
-                className="inline-flex items-center justify-center rounded-lg border border-sky-100 bg-sky-50 p-2 text-sky-700 hover:bg-sky-100 transition"
+                className="inline-flex items-center justify-center rounded-xl border border-sky-100 bg-sky-50 p-2.5 text-sky-700 transition hover:bg-sky-100"
                 title="Edit"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={() => handleDeleteClass(cls.id)}
-                className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100 transition"
+                className="inline-flex items-center justify-center rounded-xl border border-rose-100 bg-rose-50 p-2.5 text-rose-600 transition hover:bg-rose-100"
                 title="Delete"
               >
                 <FaTrash />

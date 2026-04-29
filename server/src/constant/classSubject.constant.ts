@@ -9,6 +9,7 @@ export interface ClassSubject {
 export type ClassSubjectDTO = {
   class_id: number;
   subject_id: number;
+  teacher_id?: number | null;
 };
 
 export interface ClassSubjectResponse {

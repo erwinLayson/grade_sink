@@ -62,19 +62,65 @@ export async function getTeacherByEmail(req: Request<{ email: string }>, res: Re
 export async function createTeacher(req: Request, res: Response) {
   try {
     const { first_name, middle_name, last_name, email }: TeacherDTO = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
-    if (!email) {
+    if (!normalizedEmail) {
       return res.status(400).json({ success: false, msg: "Email is required" });
     }
 
-    const teacherService = new TeacherService(new TeacherModel(pool));
-    const result = await teacherService.createTeacher({ first_name, middle_name, last_name, email });
-    
-    if (result) {
-      return res.status(201).json({ success: true, msg: "Teacher created successfully", data: { id: result } });
+    const teacherModel = new TeacherModel(pool);
+    const userModel = new UserModel(pool);
+
+    const [existingTeacher, existingUser] = await Promise.all([
+      teacherModel.getTeacherByEmail(normalizedEmail),
+      userModel.getUserByEmail(normalizedEmail),
+    ]);
+
+    if (existingTeacher || existingUser) {
+      return res.status(409).json({
+        success: false,
+        msg: "A teacher or user with this email already exists",
+      });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const transactionalTeacherModel = new TeacherModel(connection as unknown as typeof pool);
+      const transactionalUserModel = new UserModel(connection as unknown as typeof pool);
+
+      const teacherId = await transactionalTeacherModel.createTeacher({
+        first_name,
+        middle_name,
+        last_name,
+        email: normalizedEmail,
+      });
+
+      const defaultPassword = await bcrypt.hash("12345", 10);
+      const userId = await transactionalUserModel.createUser({
+        email: normalizedEmail,
+        username: normalizedEmail,
+        role: ROLES.TEACHER,
+        password: defaultPassword,
+      });
+
+      await connection.commit();
+
+      return res.status(201).json({
+        success: true,
+        msg: "Teacher created successfully",
+        data: { teacher_id: teacherId, user_id: userId },
+      });
+    } catch (e) {
+      await connection.rollback();
+      throw e;
+    } finally {
+      connection.release();
     }
   } catch (e) {
-    res.status(500).json({ success: false, msg: `Error: ${e}` });
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    res.status(500).json({ success: false, msg: `Error: ${errorMessage}` });
   }
 }
 

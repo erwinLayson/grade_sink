@@ -71,6 +71,16 @@ export default function ManageSubjects() {
   const toast = useToastHelper();
   const { addToast } = useToast();
 
+  const totalSubjects = subjects.length;
+  const totalTeachers = teachers.length;
+  const activeSubjects = subjects.filter(
+    (subject) => (subject.teacher_count || 0) > 0,
+  ).length;
+  const totalAssignments = subjects.reduce(
+    (sum, subject) => sum + (subject.teacher_count || 0),
+    0,
+  );
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -395,39 +405,65 @@ export default function ManageSubjects() {
   }
 
   if (loading)
-    return <div className="p-6 text-center text-lg">Loading subjects...</div>;
+    return (
+      <div className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-3xl items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 py-20 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 animate-pulse rounded-2xl bg-slate-200" />
+            <p className="text-lg font-semibold text-slate-900">
+              Loading subjects...
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Preparing subject records and teacher assignments.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
 
   if (selectedSubjectDetail) {
     return (
-      <article className="p-6 bg-gray-50 min-h-screen">
+      <article className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-white px-4 py-6 sm:px-6 lg:px-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-violet-100/70 to-transparent" />
+        <div className="pointer-events-none absolute -left-24 top-24 h-64 w-64 rounded-full bg-violet-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 top-40 h-64 w-64 rounded-full bg-rose-200/30 blur-3xl" />
         {/* Modal for adding teacher */}
         <div
           className={`fixed ${
             openModal ? "block opacity-100" : "hidden opacity-0"
-          } z-10 h-screen top-0 left-0 right-0 grid place-items-center bg-gray-300/40 transition-all`}
+          } z-10 h-screen top-0 left-0 right-0 grid place-items-center bg-slate-950/50 px-4 transition-all backdrop-blur-sm`}
         >
           <form
             onSubmit={handleAddTeacher}
-            className="shadow-lg bg-white rounded-md p-5 w-full max-w-md relative"
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
           >
-            <div className="grid place-items-center">
-              <h1 className="text-xl font-bold">Add Teacher</h1>
+            <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-rose-50 px-6 py-5">
+              <div className="grid place-items-center text-center">
+                <h1 className="text-2xl font-bold text-slate-900">
+                  Add Teacher
+                </h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  Connect a teacher to this subject without leaving the page.
+                </p>
+              </div>
               <span
-                className="p-2 absolute top-0 right-0 cursor-pointer text-gray-300 hover:text-black"
+                className="absolute right-4 top-4 cursor-pointer rounded-full border border-slate-200 bg-white p-2 text-slate-400 shadow-sm transition hover:border-slate-300 hover:text-slate-700"
                 onClick={() => {
                   setOpenModal(false);
                   setSelectedTeacher("");
                 }}
               >
-                <FaTimes className="text-lg" />
+                <FaTimes className="text-sm" />
               </span>
             </div>
 
-            <article className="mt-5 space-y-3">
+            <article className="space-y-4 px-6 py-6">
               <div>
-                <label className="text-base">Teacher *</label>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Teacher *
+                </label>
                 <select
-                  className="w-full border border-gray-300 p-2 rounded-md"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                   value={selectedTeacher}
                   onChange={(e) => setSelectedTeacher(e.target.value)}
                   required
@@ -448,7 +484,7 @@ export default function ManageSubjects() {
 
               <button
                 type="submit"
-                className="w-full mt-5 bg-green-600 hover:bg-green-700 text-white rounded-md p-2 font-semibold transition"
+                className="mt-2 w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 active:scale-[0.99]"
               >
                 Add Teacher
               </button>
@@ -460,36 +496,47 @@ export default function ManageSubjects() {
         <div className="mb-6 flex items-center gap-4">
           <button
             onClick={handleCloseDetail}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-200 hover:text-violet-700"
           >
             <FaArrowLeft /> Back to Subjects
           </button>
         </div>
 
         {/* Detail View - Horizontal Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Left Side - Subject Details */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold mb-6">Subject Details</h2>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">
+                Subject Details
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Edit the code and name while keeping assigned teachers intact.
+              </p>
+            </div>
             <form onSubmit={handleUpdateSubjectFromDetail}>
               <div className="space-y-4">
                 <div>
-                  <label className="text-base font-semibold">Code *</label>
+                  <label className="text-sm font-semibold text-slate-700">
+                    Code *
+                  </label>
                   <input
                     type="text"
                     placeholder="e.g., ENG101"
-                    className="w-full border border-gray-300 p-2 rounded-md mt-2"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-base font-semibold">Name *</label>
+                  <label className="text-sm font-semibold text-slate-700">
+                    Name *
+                  </label>
                   <input
                     type="text"
                     placeholder="e.g., English Literature"
-                    className="w-full border border-gray-300 p-2 rounded-md mt-2"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -500,14 +547,14 @@ export default function ManageSubjects() {
               <div className="mt-6 flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                  className="flex-1 rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800"
                 >
                   Save Changes
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseDetail}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold transition"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
@@ -516,34 +563,43 @@ export default function ManageSubjects() {
           </div>
 
           {/* Right Side - Teachers List */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Assigned Teachers</h2>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Assigned Teachers
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Current teacher links for this subject.
+                </p>
+              </div>
               <button
                 onClick={() => setOpenModal(true)}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold"
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 <FaPlus /> Add Teacher
               </button>
             </div>
 
             {detailLoading ? (
-              <div className="text-center py-8">Loading...</div>
+              <div className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-slate-500">
+                Loading...
+              </div>
             ) : subjectTeachers.length > 0 ? (
               <div className="space-y-3">
                 {subjectTeachers.map((teacher) => (
                   <div
                     key={teacher.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                    className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-violet-200 hover:bg-violet-50"
                   >
                     <div>
-                      <p className="font-semibold text-gray-800">
+                      <p className="font-semibold text-slate-900">
                         {teacher.teacher_name}
                       </p>
                     </div>
                     <button
                       onClick={() => handleDeleteTeacher(teacher.id)}
-                      className="text-red-600 hover:text-red-800 transition"
+                      className="text-rose-600 transition hover:text-rose-800"
                       title="Remove teacher"
                     >
                       <FaTrash />
@@ -552,7 +608,7 @@ export default function ManageSubjects() {
                 ))}
               </div>
             ) : (
-              <div className="p-6 text-center text-gray-500">
+              <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
                 <p>No teachers assigned yet</p>
               </div>
             )}
@@ -563,49 +619,61 @@ export default function ManageSubjects() {
   }
 
   return (
-    <article className="p-6 bg-gray-50 min-h-screen">
+    <article className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-white px-4 py-6 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-violet-100/70 to-transparent" />
+      <div className="pointer-events-none absolute -left-24 top-24 h-64 w-64 rounded-full bg-violet-200/30 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 top-40 h-64 w-64 rounded-full bg-rose-200/30 blur-3xl" />
       {/* Modal for create/update subject */}
       <div
         className={`fixed ${
           openModal ? "block opacity-100" : "hidden opacity-0"
-        } z-10 h-screen top-0 left-0 right-0 grid place-items-center bg-gray-300/40 transition-all overflow-y-auto`}
+        } z-10 h-screen top-0 left-0 right-0 grid place-items-center bg-slate-950/50 px-4 transition-all overflow-y-auto backdrop-blur-sm`}
       >
         <form
           onSubmit={handleSubjectModalSubmit}
-          className="shadow-lg bg-white rounded-md p-5 w-full max-w-md relative my-8"
+          className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)] my-8"
         >
-          <div className="grid place-items-center">
-            <h1 className="text-xl font-bold">
-              {modalType === "create"
-                ? "Create Subject with Teachers"
-                : "Update Subject"}
-            </h1>
+          <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-rose-50 px-6 py-5">
+            <div className="grid place-items-center text-center">
+              <h1 className="text-2xl font-bold text-slate-900">
+                {modalType === "create"
+                  ? "Create Subject with Teachers"
+                  : "Update Subject"}
+              </h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Keep the subject catalog organized and easy to maintain.
+              </p>
+            </div>
             <span
-              className="p-2 absolute top-0 right-0 cursor-pointer text-gray-300 hover:text-black"
+              className="absolute right-4 top-4 cursor-pointer rounded-full border border-slate-200 bg-white p-2 text-slate-400 shadow-sm transition hover:border-slate-300 hover:text-slate-700"
               onClick={handleCloseModal}
             >
-              <FaTimes className="text-lg" />
+              <FaTimes className="text-sm" />
             </span>
           </div>
 
-          <article className="mt-5 space-y-4">
+          <article className="space-y-4 px-6 py-6">
             <div>
-              <label className="text-base">Subject Code *</label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Subject Code *
+              </label>
               <input
                 type="text"
                 placeholder="e.g., ENG101"
-                className="w-full border border-gray-300 p-2 rounded-md"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required
               />
             </div>
             <div>
-              <label className="text-base">Subject Name *</label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Subject Name *
+              </label>
               <input
                 type="text"
                 placeholder="e.g., English Literature"
-                className="w-full border border-gray-300 p-2 rounded-md"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -614,29 +682,29 @@ export default function ManageSubjects() {
 
             {modalType === "create" && (
               <div>
-                <label className="text-base font-semibold mb-2 block">
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
                   Assign Teachers (Optional)
                 </label>
-                <div className="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
+                <div className="max-h-40 space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-3">
                   {teachers.length > 0 ? (
                     teachers.map((teacher) => (
                       <label
                         key={teacher.id}
-                        className="flex items-center gap-2 cursor-pointer"
+                        className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white"
                       >
                         <input
                           type="checkbox"
                           checked={selectedTeachers.includes(teacher.id)}
                           onChange={() => toggleTeacherSelection(teacher.id)}
-                          className="w-4 h-4"
+                          className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
                         />
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-slate-700">
                           {teacher.first_name} {teacher.last_name}
                         </span>
                       </label>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       No teachers available
                     </p>
                   )}
@@ -646,10 +714,10 @@ export default function ManageSubjects() {
 
             <button
               type="submit"
-              className={`w-full mt-5 text-white rounded-md p-2 font-semibold transition ${
+              className={`mt-2 w-full rounded-xl px-4 py-3 font-semibold text-white transition ${
                 modalType === "create"
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  ? "bg-slate-900 hover:bg-slate-800"
+                  : "bg-slate-900 hover:bg-slate-800"
               }`}
             >
               {modalType === "create" ? "Create Subject" : "Update Subject"}
@@ -659,11 +727,58 @@ export default function ManageSubjects() {
       </div>
 
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          Manage Subjects
-        </h1>
-        <p className="text-gray-600">Add and manage subjects with teachers</p>
+      <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+        <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-rose-50 px-6 py-6 sm:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-violet-600">
+                Subject Management
+              </p>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                Manage Subjects
+              </h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+                Keep every subject organized, assign teachers, and review
+                teaching coverage in one place.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 lg:min-w-[520px]">
+              <div className="rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Subjects
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  {totalSubjects}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-sky-100 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Teachers
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  {totalTeachers}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Active
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  {activeSubjects}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Assignments
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  {totalAssignments}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -679,21 +794,21 @@ export default function ManageSubjects() {
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="flex-1 relative">
-            <FaSearch className="absolute left-3 top-3 text-gray-400" />
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1">
+            <FaSearch className="absolute left-4 top-4 text-slate-400" />
             <input
               type="text"
               placeholder="Search by code or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-4 text-slate-900 shadow-sm outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
             />
           </div>
 
           <button
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold whitespace-nowrap"
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-2xl bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800"
             onClick={handleCreateSubject}
           >
             <FaPlus /> Create Subject
@@ -702,55 +817,82 @@ export default function ManageSubjects() {
       </div>
 
       {/* Subject Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredSubjects.map((subject) => (
           <div
             key={subject.id}
-            className="group relative overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)]"
+            className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,0.12)]"
           >
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-400 via-fuchsia-400 to-rose-300" />
             {/* Card clickable area */}
             <div
               onClick={() => handleOpenDetail(subject)}
-              className="p-6 pt-7 cursor-pointer"
+              className="cursor-pointer p-6"
             >
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {subject.code}
-                </p>
-                <h2 className="text-xl font-semibold text-slate-900 mt-1">
-                  {subject.name}
-                </h2>
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="inline-flex rounded-full bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-700">
+                    Subject
+                  </p>
+                  <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+                    {subject.name}
+                  </h2>
+                  <p className="mt-2 text-sm font-medium uppercase tracking-[0.18em] text-slate-500">
+                    {subject.code}
+                  </p>
+                </div>
+
+                <div className="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Coverage
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">
+                    {subject.teacher_count || 0} Teachers
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-violet-100 bg-violet-50 p-3">
-                  <p className="text-2xl font-bold text-violet-700">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-4 shadow-sm">
+                  <p className="text-3xl font-bold leading-none text-violet-700">
                     {subject.teacher_count || 0}
                   </p>
-                  <p className="text-xs text-slate-600">Teachers</p>
+                  <p className="mt-2 text-sm font-medium text-slate-600">
+                    Teachers
+                  </p>
                 </div>
-                <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
-                  <p className="text-2xl font-bold text-amber-700">
+                <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
+                  <p className="text-3xl font-bold leading-none text-amber-700">
                     {subject.class_count || 0}
                   </p>
-                  <p className="text-xs text-slate-600">Classes</p>
+                  <p className="mt-2 text-sm font-medium text-slate-600">
+                    Classes
+                  </p>
                 </div>
               </div>
             </div>
 
+            <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
+              <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                Tap to view details
+              </span>
+              <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
+                Active
+              </span>
+            </div>
+
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-2 opacity-0 translate-y-1 pointer-events-none transition group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+            <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-1 opacity-0 translate-y-1 pointer-events-none transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
               <button
                 onClick={() => handleUpdateSubject(subject)}
-                className="inline-flex items-center justify-center rounded-lg border border-violet-100 bg-violet-50 p-2 text-violet-700 hover:bg-violet-100 transition"
+                className="inline-flex items-center justify-center rounded-xl border border-violet-100 bg-violet-50 p-2.5 text-violet-700 transition hover:bg-violet-100"
                 title="Edit"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={() => handleDeleteSubject(subject.id)}
-                className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100 transition"
+                className="inline-flex items-center justify-center rounded-xl border border-rose-100 bg-rose-50 p-2.5 text-rose-600 transition hover:bg-rose-100"
                 title="Delete"
               >
                 <FaTrash />
@@ -761,8 +903,8 @@ export default function ManageSubjects() {
       </div>
 
       {filteredSubjects.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No subjects found</p>
+        <div className="py-12 text-center">
+          <p className="text-lg text-slate-500">No subjects found</p>
         </div>
       )}
     </article>
