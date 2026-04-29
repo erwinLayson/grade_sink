@@ -61,6 +61,22 @@ class UserModel {
     }
   }
 
+  async getUserById(id: number): Promise<User | null> {
+    try {
+      const [rows] = await this.pool.query("SELECT * FROM users WHERE id = ?", [id]);
+      const users = rows as User[];
+
+      if (users.length <= 0) {
+        return null;
+      }
+
+      return users[0] ?? null;
+    } catch (e) {
+      console.log(`....Fetching user by id ${e}`);
+      throw new Error(`${e}`);
+    }
+  }
+
   async updateUserByEmail(email: string, data: UserDTO):Promise<number>{
     try {
       const userDetails = { ...data };

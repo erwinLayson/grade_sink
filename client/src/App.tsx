@@ -12,6 +12,7 @@ import GetUserProvider from "./context/getUserContext";
 // Pages
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // teacher
 import { Grades } from "./pages/teachers/Grades";
@@ -41,6 +42,7 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               <Route
                 element={

@@ -1,18 +1,42 @@
 import { useState } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
+import { useToastHelper } from "../context/ToastContext";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [resetLink, setResetLink] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const toast = useToastHelper();
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (!email.trim()) {
+      toast.warning("Email is required");
       return;
     }
 
-    setSubmitted(true);
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        "http://localhost:7000/auth/forgot-password",
+        { email },
+        { withCredentials: true },
+      );
+
+      setResetLink(response.data?.data?.resetLink || null);
+      setSubmitted(true);
+      toast.success(response.data?.msg || "Reset link prepared");
+    } catch (error) {
+      const msg = axios.isAxiosError(error)
+        ? error.response?.data?.msg || error.message
+        : String(error);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -44,6 +68,14 @@ export default function ForgotPassword() {
                 <span className="font-medium text-neutral-900">{email}</span>, a
                 reset link has been sent.
               </p>
+              {resetLink && (
+                <a
+                  href={resetLink}
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-xl border border-neutral-900 bg-neutral-900 px-4 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-black"
+                >
+                  Open reset link
+                </a>
+              )}
             </div>
 
             <Link
@@ -74,9 +106,10 @@ export default function ForgotPassword() {
 
             <button
               type="submit"
-              className="w-full border border-neutral-900 bg-neutral-900 px-4 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-black"
+              className="w-full border border-neutral-900 bg-neutral-900 px-4 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={loading}
             >
-              Send reset link
+              {loading ? "Sending..." : "Send reset link"}
             </button>
 
             <Link

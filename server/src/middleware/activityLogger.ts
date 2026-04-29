@@ -5,15 +5,15 @@ import { pool } from "../config/dbConnection.config";
 
 const activityService = new ActivityService(new ActivityModel(pool));
 
-export function resolveClientIp(req: Request) {
+export function resolveClientIp(req: Request<any, any, any, any>) {
   const forwardedFor = req.headers["x-forwarded-for"];
   const realIp = req.headers["x-real-ip"];
   const cfConnectingIp = req.headers["cf-connecting-ip"];
 
   const firstForwardedIp = Array.isArray(forwardedFor)
     ? forwardedFor[0]
-    : typeof forwardedFor === "string"
-      ? forwardedFor.split(",")[0].trim()
+    : typeof forwardedFor === "string" && forwardedFor.length > 0
+      ? forwardedFor.split(",")[0]?.trim()
       : undefined;
 
   const candidate =
@@ -27,7 +27,7 @@ export function resolveClientIp(req: Request) {
   return typeof candidate === "string" ? candidate : undefined;
 }
 
-export async function logActivity(req: Request, action: string, resource: string, details?: any) {
+export async function logActivity(req: Request<any, any, any, any>, action: string, resource: string, details?: any) {
   try {
     const user = (req as any).user;
     if (!user) return;

@@ -1,0 +1,1 @@
+{"version":3,"file":"validateToken.d.ts","sourceRoot":"","sources":["../../src/middleware/validateToken.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAA;AAEzD,QAAA,MAAM,aAAa,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,4DAsB3E,CAAA;AAED,eAAe,aAAa,CAAA"}

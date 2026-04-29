@@ -6,10 +6,10 @@ export interface ActivityRow {
   role: string;
   action: string;
   resource: string;
-  details?: string; // JSON string
-  ip?: string;
-  user_agent?: string;
-  created_at?: Date;
+  details?: string | undefined; // JSON string
+  ip?: string | undefined;
+  user_agent?: string | undefined;
+  created_at?: Date | undefined;
 }
 
 class ActivityModel {
@@ -44,7 +44,7 @@ class ActivityModel {
     try {
       const [result] = await this.pool.query<ResultSetHeader>(
         `INSERT INTO activity_logs (user_id, role, action, resource, details, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [row.user_id, row.role, row.action, row.resource, row.details ? row.details : null, row.ip ?? null, row.user_agent ?? null]
+        [row.user_id, row.role, row.action, row.resource, row.details ?? null, row.ip ?? null, row.user_agent ?? null]
       );
       return result.insertId;
     } catch (e) {

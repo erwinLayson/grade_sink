@@ -7,7 +7,7 @@ import ActivityService from "../service/activity.service";
 import ActivityModel from "../model/activity.model";
 import { resolveClientIp } from "../middleware/activityLogger";
  
-export const authUser = async (req: Request<[], [], {email: string, password: string}>, res: Response) => {
+export const authUser = async (req: Request<any, any, {email: string, password: string}>, res: Response) => {
   try {
     const { email, password } = req.body;
     
