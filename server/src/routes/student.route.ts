@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllStudents, getStudentById, createStudent, updateStudent, deleteStudent } from "../controller/student.controller";
+import { getAllStudents, getStudentById, createStudent, updateStudent, deleteStudent, importCommit, importPreview } from "../controller/student.controller";
 import validateToken from "../middleware/validateToken";
 import allowedRole from "../middleware/allowedRole";
 import { ROLES } from "../constant/userRole";
@@ -22,6 +22,22 @@ route.post("/students",
   validateToken,
   allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
   createStudent
+);
+
+// Import endpoints
+route.post(
+  "/students/import/preview",
+  validateToken,
+  allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+  // controller provides multer middleware in array
+  ...importPreview,
+);
+
+route.post(
+  "/students/import",
+  validateToken,
+  allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+  importCommit,
 );
 
 route.put("/students/:id", 

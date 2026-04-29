@@ -32,6 +32,11 @@ export default function ManageStudents() {
   const [searchTerm, setSearchTerm] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [modalType, setModalType] = useState<"create" | "update" | "">("");
+  const [openImportModal, setOpenImportModal] = useState(false);
+  const [importPreviewRows, setImportPreviewRows] = useState<any[] | null>(
+    null,
+  );
+  const [importLoading, setImportLoading] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -413,9 +418,195 @@ export default function ManageStudents() {
             <FaPlus /> Create Student
           </button>
         </div>
+        <button
+          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-semibold whitespace-nowrap transition-all duration-200 active:scale-95"
+          onClick={() => {
+            setOpenImportModal(true);
+            setImportPreviewRows(null);
+          }}
+        >
+          Import XLSX
+        </button>
       </div>
 
       {/* Table */}
+
+      {/* Import Modal */}
+      <div
+        className={`fixed ${openImportModal ? "block opacity-100" : "hidden opacity-0"} z-10 h-screen top-0 left-0 right-0 grid place-items-center bg-slate-900/40 transition-all overflow-y-auto`}
+      >
+        <div className="shadow-2xl bg-white rounded-xl p-6 w-full max-w-3xl relative my-8 border border-slate-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Import Students (XLSX)</h2>
+            <button
+              className="text-slate-500 hover:text-slate-700"
+              onClick={() => setOpenImportModal(false)}
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Upload file
+              </label>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  setImportLoading(true);
+                  setImportPreviewRows(null);
+                  try {
+                    const fd = new FormData();
+                    fd.append("file", f);
+                    const resp = await axios.post(
+                      "http://localhost:7000/students/import/preview",
+                      fd,
+                      { withCredentials: true },
+                    );
+                    setImportPreviewRows(resp.data?.data?.rows || []);
+                  } catch (err) {
+                    const msg = axios.isAxiosError(err)
+                      ? err.response?.data?.msg || err.message
+                      : String(err);
+                    toast.error(msg);
+                  } finally {
+                    setImportLoading(false);
+                  }
+                }}
+              />
+              <p className="text-sm text-slate-500 mt-2">
+                Accepted columns: id, student_id, studentId, student_number,
+                studentNo, first_name, middle_name, last_name, lrn, birthdate,
+                sex, class_level
+              </p>
+            </div>
+
+            {importLoading && <div>Parsing file...</div>}
+
+            {importPreviewRows && (
+              <div>
+                <h3 className="font-semibold mb-2">
+                  Preview ({importPreviewRows.length} rows)
+                </h3>
+                <div className="overflow-x-auto max-h-72 overflow-y-auto border rounded-lg">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">
+                          Row
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">
+                          Name
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">
+                          Student ID
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">
+                          LRN
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">
+                          Status
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">
+                          Issues
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreviewRows.map((r: any) => (
+                        <tr key={r.row} className={r.valid ? "" : "bg-rose-50"}>
+                          <td className="px-4 py-2 text-sm text-slate-700">
+                            {r.row}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-slate-900">
+                            {r.normalized?.first_name || ""}{" "}
+                            {r.normalized?.last_name || ""}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-slate-600">
+                            {r.normalized?.student_id ?? ""}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-slate-600">
+                            {r.normalized?.lrn ?? ""}
+                          </td>
+                          <td className="px-4 py-2 text-sm">
+                            {r.status === "valid" ? (
+                              <span className="text-emerald-700 font-semibold">
+                                Valid
+                              </span>
+                            ) : r.status === "duplicate" ? (
+                              <span className="text-amber-700 font-semibold">
+                                Duplicate
+                              </span>
+                            ) : r.status === "conflict" ? (
+                              <span className="text-rose-700 font-semibold">
+                                Conflict
+                              </span>
+                            ) : (
+                              <span className="text-rose-600">Invalid</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-slate-600">
+                            {(r.issues || []).join(", ")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-4 flex justify-end gap-3">
+                  <button
+                    className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300"
+                    onClick={() => setImportPreviewRows(null)}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded-lg bg-indigo-600 text-white"
+                    onClick={async () => {
+                      const validRows = importPreviewRows.filter(
+                        (r: any) => r.valid,
+                      );
+                      if (validRows.length === 0) {
+                        toast.warning("No valid rows to import");
+                        return;
+                      }
+
+                      try {
+                        setImportLoading(true);
+                        const resp = await axios.post(
+                          "http://localhost:7000/students/import",
+                          { rows: validRows },
+                          { withCredentials: true },
+                        );
+                        const data = resp.data?.data;
+                        toast.success(
+                          `Imported ${data.summary.inserted} rows, skipped ${data.summary.skipped}`,
+                        );
+                        setOpenImportModal(false);
+                        await fetchStudents();
+                      } catch (err) {
+                        const msg = axios.isAxiosError(err)
+                          ? err.response?.data?.msg || err.message
+                          : String(err);
+                        toast.error(msg);
+                      } finally {
+                        setImportLoading(false);
+                      }
+                    }}
+                  >
+                    Import Valid Rows
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
         {filteredStudents.length > 0 ? (
           <div className="overflow-x-auto">

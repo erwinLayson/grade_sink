@@ -63,6 +63,22 @@ class StudentModel {
     }
   }
 
+  async getStudentByLrn(lrn: string): Promise<Student | null> {
+    try {
+      const [rows] = await this.pool.query("SELECT * FROM students WHERE lrn = ?", [lrn]);
+      const students = rows as Student[];
+
+      if (students.length <= 0) {
+        return null;
+      }
+
+      return students[0] ?? null;
+    } catch (e) {
+      console.log(`....Fetching student by lrn ${e}`);
+      throw new Error(`${e}`);
+    }
+  }
+
   async updateStudentById(id: number, data: Partial<StudentDTO>): Promise<number> {
     try {
       const keys = Object.keys(data);
