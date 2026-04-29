@@ -45,6 +45,22 @@ class UserModel {
     }
   }
 
+  async getUserByUsername(username: string): Promise<User | null> {
+    try {
+      const [rows] = await this.pool.query("SELECT * FROM users WHERE username = ?", [username]);
+      const users = rows as User[];
+
+      if (users.length <= 0) {
+        return null;
+      }
+
+      return users[0] ?? null;
+    } catch (e) {
+      console.log(`....Fetching user by username ${e}`);
+      throw new Error(`${e}`);
+    }
+  }
+
   async updateUserByEmail(email: string, data: UserDTO):Promise<number>{
     try {
       const userDetails = { ...data };
@@ -59,6 +75,29 @@ class UserModel {
       return 1
     } catch (e) {
       console.log(`....Fetching user by email ${e}`)
+      throw new Error(`${e}`);
+    }
+  }
+
+  async updateUserById(id: number, data: Partial<UserDTO>): Promise<number> {
+    try {
+      const keys = Object.keys(data) as Array<keyof UserDTO>;
+
+      if (keys.length === 0) {
+        return 0;
+      }
+
+      const setClause = keys.map((key) => `${key} = ?`).join(", ");
+      const values = keys.map((key) => data[key]);
+
+      const [result] = await this.pool.query<ResultSetHeader>(
+        `UPDATE users SET ${setClause} WHERE id = ?`,
+        [...values, id],
+      );
+
+      return result.affectedRows;
+    } catch (e) {
+      console.log(`....Updating user by id error ${e}`);
       throw new Error(`${e}`);
     }
   }

@@ -1,4 +1,4 @@
-import { FaHome, FaGraduationCap, FaBook, FaUsers, FaChalkboard } from "react-icons/fa";
+import { FaHome, FaGraduationCap, FaBook, FaUsers, FaChalkboard, FaUserEdit } from "react-icons/fa";
 import type { IconType } from "react-icons";
 
 export type NavItem = {
@@ -18,6 +18,7 @@ export const DEFAULT_NAV_CONFIG: SideBarProps = {
     { path: "/teacher/dashboard", label: "Dashboard", icon: FaHome },
     { path: "/teacher/my-classes", label: "My Classes", icon: FaBook },
     { path: "/grade-management", label: "Grade Management", icon: FaGraduationCap },
+    { path: "/teacher/profile", label: "Profile", icon: FaUserEdit },
   ],
   admin: [
     { path: "/admin/dashboard", label: "Dashboard", icon: FaHome },

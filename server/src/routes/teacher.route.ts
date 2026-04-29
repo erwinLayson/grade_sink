@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllTeachers, getTeacherById, getTeacherByEmail, createTeacher, updateTeacher, deleteTeacher } from "../controller/teacher.controller";
+import { getAllTeachers, getTeacherById, getTeacherByEmail, createTeacher, updateTeacher, deleteTeacher, getMyTeacherProfile, updateMyTeacherProfile } from "../controller/teacher.controller";
 import validateToken from "../middleware/validateToken";
 import allowedRole from "../middleware/allowedRole";
 import { ROLES } from "../constant/userRole";
@@ -22,6 +22,20 @@ route.get("/teachers/email/:email",
   validateToken,
   allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.TEACHER]),
   getTeacherByEmail
+);
+
+route.get(
+  "/teachers/me/profile",
+  validateToken,
+  allowedRole([ROLES.TEACHER]),
+  getMyTeacherProfile,
+);
+
+route.put(
+  "/teachers/me/profile",
+  validateToken,
+  allowedRole([ROLES.TEACHER]),
+  updateMyTeacherProfile,
 );
 
 route.post("/teachers", 
