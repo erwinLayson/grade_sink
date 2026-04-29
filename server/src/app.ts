@@ -9,6 +9,7 @@ import userAuthRoute from "./routes/userAuth.route.js";
 import userRoute from "./routes/user.route.js";
 import teacherRoute from "./routes/teacher.route.js";
 import studentRoute from "./routes/student.route.js";
+import activityRoute from "./routes/activity.route";
 import classRoute from "./routes/class.route.js";
 import subjectRoute from "./routes/subject.route.js";
 import studentGradeRoute from "./routes/studentGrade.route.js";
@@ -20,6 +21,8 @@ import teacherHandleSubjectRoute from "./routes/teacherHandleSubject.route.js";
 
 
 const app: Express = express();
+
+app.set("trust proxy", true);
 
 // database connection
 testConnection();
@@ -37,6 +40,7 @@ app.use(userRoute);
 app.use(userAuthRoute);
 app.use(teacherRoute);
 app.use(studentRoute);
+app.use(activityRoute);
 app.use(classRoute);
 app.use(subjectRoute);
 app.use(studentGradeRoute);

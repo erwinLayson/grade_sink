@@ -252,9 +252,9 @@ export const RECOMMENDED_TAILWIND_CONFIG = {
  * Height:   h-12, h-full, h-screen
  * 
  * Examples:
- * <div className="p-6 space-y-4">          {/* 24px padding, 16px vertical gap */}
- * <button className="px-4 py-2">          {/* 16px horizontal, 8px vertical */}
- * <div className="mb-6">                   {/* 24px bottom margin */}
+ * <div className="p-6 space-y-4">          // 24px padding, 16px vertical gap
+ * <button className="px-4 py-2">          // 16px horizontal, 8px vertical
+ * <div className="mb-6">                   // 24px bottom margin
  */
 
 /**

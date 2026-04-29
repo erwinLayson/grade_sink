@@ -21,5 +21,10 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/constants/designGuide.tsx",
+    "src/constants/tailwindGuide.ts",
+    "src/constants/implementationChecklist.ts"
+  ]
 }

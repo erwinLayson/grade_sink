@@ -1,8 +1,20 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #f6f6f6;
+  --surface: #ffffff;
+  --text: #101010;
+  --muted: #6c6c6c;
+  --line: #e8e8e8;
+  --line-strong: #d6d6d6;
+}
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
+  background: radial-gradient(circle at top right, #efefef 0%, #f6f6f6 45%, #fcfcfc 100%);
+  color: var(--text);
+  min-height: 100vh;
 }
 
 .sidebar {
@@ -11,4 +23,34 @@ body {
 
 .sidebar.close {
   width: 4rem;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d0d0 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 999px;
+}
+
+.fade-in {
+  animation: fadeIn 240ms ease-out both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

@@ -31,8 +31,8 @@ export default function SideBar({
 
   if (!user) {
     return (
-      <aside className="sidebar">
-        <p>Please log in</p>
+      <aside className="sidebar border-r border-neutral-200 bg-white p-4">
+        <p className="text-sm text-neutral-600">Please log in</p>
       </aside>
     );
   }
@@ -73,21 +73,21 @@ export default function SideBar({
 
   return (
     <aside
-      className={`bg-slate-900 shadow-xl min-h-screen sidebar ${isOpen ? "open" : "close"} flex flex-col gap-20 transition-all duration-300`}
+      className={`sidebar ${isOpen ? "open" : "close"} flex min-h-screen flex-col gap-12 border-r border-neutral-200 bg-white transition-all duration-300`}
     >
-      <header className="grid max-h-16 border-b border-slate-700">
-        <article className="flex items-center justify-center gap-2 py-4 px-4">
+      <header className="grid max-h-16 border-b border-neutral-200">
+        <article className="flex items-center justify-center gap-2 px-4 py-4">
           <div
-            className={`transition-all duration-300 overflow-hidden ${isOpen ? "w-12 h-12" : "w-8 h-8"}`}
+            className={`overflow-hidden rounded-full border border-neutral-300 bg-neutral-50 transition-all duration-300 ${isOpen ? "h-10 w-10" : "h-8 w-8"}`}
           >
             <img
               src="https://th.bing.com/th/id/OIP.pyCJLlr1nrBCaHdOdKXbbAHaHa?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3"
               alt="school logo"
-              className={`w-full h-full object-cover shrink-0 rounded-lg`}
+              className="h-full w-full shrink-0 object-cover"
             />
           </div>
           <p
-            className={`${isOpen ? "opacity-100 w-auto" : "opacity-0 w-0"} text-sm font-semibold text-white shrink-1 transition-all duration-300`}
+            className={`${isOpen ? "w-auto opacity-100" : "w-0 opacity-0"} shrink-1 text-sm font-semibold tracking-wide text-neutral-900 transition-all duration-300`}
           >
             Grade Sink
           </p>
@@ -102,13 +102,13 @@ export default function SideBar({
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 text-slate-300 hover:text-white hover:bg-indigo-600`}
+                  className="flex items-center gap-4 rounded-xl border border-transparent px-4 py-3 text-neutral-600 transition-all duration-200 hover:border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900"
                 >
                   {IconComponent && (
-                    <IconComponent className={`text-lg flex-shrink-0`} />
+                    <IconComponent className="text-lg flex-shrink-0" />
                   )}
                   <span
-                    className={`transition-all duration-300 ${isOpen ? "opacity-100 w-auto" : "opacity-0 w-0 hidden"} font-medium text-sm`}
+                    className={`font-medium text-sm transition-all duration-300 ${isOpen ? "w-auto opacity-100" : "hidden w-0 opacity-0"}`}
                   >
                     {item.label}
                   </span>
@@ -119,21 +119,19 @@ export default function SideBar({
         </ul>
       </nav>
 
-      <footer className="border-t border-slate-700 p-4 text-center text-xs text-slate-400">
-        <div className="px-2 pb-2">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center gap-4 rounded-lg px-4 py-3 text-left text-rose-300 transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-100"
+      <footer className="border-t border-neutral-200 p-4 text-center text-xs text-neutral-500">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center gap-4 rounded-xl border border-transparent px-4 py-3 text-left text-neutral-600 transition-all duration-200 hover:border-neutral-200 hover:bg-neutral-100 hover:text-black"
+        >
+          <FaSignOutAlt className="text-lg flex-shrink-0" />
+          <span
+            className={`font-medium text-sm transition-all duration-300 ${isOpen ? "w-auto opacity-100" : "hidden w-0 opacity-0"}`}
           >
-            <FaSignOutAlt className="text-lg flex-shrink-0" />
-            <span
-              className={`transition-all duration-300 ${isOpen ? "opacity-100 w-auto" : "opacity-0 w-0 hidden"} font-medium text-sm`}
-            >
-              Logout
-            </span>
-          </button>
-        </div>
+            Logout
+          </span>
+        </button>
         <p>© 2026 Grade Sink</p>
       </footer>
     </aside>

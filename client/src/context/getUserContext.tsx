@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState, useCallback } from "react";
 import type { GetUserProps } from "../constant/getUser";
 import axios from "axios";
+import type { UserProps } from "../constant/user";
 
 type userContextProps = {
   users: GetUserProps[] | null;
@@ -37,7 +38,7 @@ export default function GetUserProvider({
         setUser([]);
         setError(null);
         return;
-        }
+      }
 
       console.log("Users fetched:", usersData);
       setUser(usersData);
@@ -59,8 +60,28 @@ export default function GetUserProvider({
     }
   }, []);
 
-  // Initial fetch on mount
   useEffect(() => {
+    const userCredential = localStorage.getItem("userCredential");
+
+    if (!userCredential) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(userCredential) as UserProps;
+      const canFetchUsers =
+        parsedUser.role === "admin" || parsedUser.role === "super_admin";
+
+      if (!canFetchUsers) {
+        setIsLoading(false);
+        return;
+      }
+    } catch {
+      setIsLoading(false);
+      return;
+    }
+
     fetchUsers();
   }, []); // Empty dependency array - only run once on mount
 

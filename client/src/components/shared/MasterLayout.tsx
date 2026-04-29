@@ -13,38 +13,40 @@ export default function MasterLayout() {
   const { toggleSidebar } = useSideBar();
 
   return (
-    <main className="flex h-screen bg-slate-50">
+    <main className="flex h-screen bg-neutral-100 text-neutral-900">
       <SideBar />
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white shadow-sm border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-20">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-neutral-200 bg-white/90 px-5 py-4 backdrop-blur md:px-8">
           <div
             onClick={toggleSidebar}
-            className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 p-2 rounded-lg transition-all duration-200 cursor-pointer"
+            className="cursor-pointer rounded-full border border-neutral-300 p-2 text-neutral-700 transition hover:border-neutral-500 hover:text-black"
             title="Toggle sidebar"
           >
             <FaBars className="text-lg" />
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             {/* User Info */}
-            <div className="flex items-center gap-3 border-r border-slate-200 pr-6">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                <span className="text-indigo-600 font-semibold text-sm">
+            <div className="flex items-center gap-3 border-r border-neutral-200 pr-4 md:pr-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-neutral-50">
+                <span className="text-sm font-semibold text-neutral-800">
                   {user?.username.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="hidden sm:block">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold tracking-wide text-neutral-900">
                   {user?.username.toUpperCase()}
                 </p>
-                <p className="text-xs text-slate-500">Admin</p>
+                <p className="text-xs uppercase tracking-wider text-neutral-500">
+                  {user?.role?.replace("_", " ")}
+                </p>
               </div>
             </div>
 
             {/* Settings */}
             <button
-              className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 p-2 rounded-lg transition-all duration-200 cursor-pointer"
+              className="cursor-pointer rounded-full border border-neutral-300 p-2 text-neutral-700 transition hover:border-neutral-500 hover:text-black"
               title="Settings"
             >
               <FaCog className="text-lg" />
@@ -53,8 +55,8 @@ export default function MasterLayout() {
         </header>
 
         {/* Main Content */}
-        <section className="flex-1 overflow-y-auto">
-          <div className="min-h-full">
+        <section className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+          <div className="fade-in min-h-full rounded-2xl border border-neutral-200 bg-white p-4 shadow-[0_20px_50px_-45px_rgba(0,0,0,0.6)] md:p-6">
             <Outlet />
           </div>
         </section>

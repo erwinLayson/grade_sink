@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaTimes } from "react-icons/fa";
 import axios from "axios";
-import { useToastHelper } from "../../context/ToastContext";
+import { useToast, useToastHelper } from "../../context/ToastContext";
 
 interface Student {
   id: number;
@@ -51,6 +51,7 @@ export default function ManageStudents() {
   const [sex, setSex] = useState("");
   const [level, setLevel] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const { addToast } = useToast();
   const toast = useToastHelper();
 
   useEffect(() => {
@@ -160,7 +161,9 @@ export default function ManageStudents() {
   }
 
   async function handleDelete(id: number) {
-    toast.error("Delete this student?", {
+    addToast({
+      type: "error",
+      message: "Delete this student?",
       duration: 5000,
       action: {
         label: "Confirm",

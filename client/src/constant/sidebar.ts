@@ -34,5 +34,6 @@ export const DEFAULT_NAV_CONFIG: SideBarProps = {
     { path: "/manage-students", label: "Manage Students", icon: FaUsers },
     { path: "/manage-classes", label: "Manage Classes", icon: FaBook },
     { path: "/manage-subjects", label: "Manage Subjects", icon: FaBook },
+    { path: "/super-admin/activity-logs", label: "Activity Logs", icon: FaUserEdit },
   ],
 };

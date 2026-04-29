@@ -6,6 +6,7 @@ import { StudentDTO } from "../constant/student.constant";
 import multer from "multer";
 import xlsx from "xlsx";
 import { ImportPreviewRow, NormalizedStudentImportRow } from "../service/students/student.service";
+import { logActivity } from "../middleware/activityLogger";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -215,6 +216,13 @@ export async function importCommit(req: Request, res: Response) {
       .filter((r) => r && (r.student_id !== undefined || r.lrn));
 
     const result = await studentService.importStudents(normalizedRows);
+
+    // log activity for super admins / admins who perform import
+    try {
+      await logActivity(req, "bulk_import", "students", { summary: result.summary });
+    } catch (e) {
+      console.error("Failed to log import activity", e);
+    }
 
     return res.status(200).json({ success: true, data: result });
   } catch (e) {

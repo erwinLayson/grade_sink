@@ -11,6 +11,7 @@ import GetUserProvider from "./context/getUserContext";
 
 // Pages
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
 
 // teacher
 import { Grades } from "./pages/teachers/Grades";
@@ -29,6 +30,7 @@ import {
   ManageSubjects,
   SuperAdminDashboard,
 } from "./pages/admin";
+import ActivityLogs from "./pages/superAdmin/ActivityLogs";
 
 export default function App() {
   return (
@@ -38,6 +40,7 @@ export default function App() {
           <Router>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               <Route
                 element={
@@ -61,6 +64,10 @@ export default function App() {
                   <Route
                     path="/superadmin/dashboard"
                     element={<SuperAdminDashboard />}
+                  />
+                  <Route
+                    path="/super-admin/activity-logs"
+                    element={<ActivityLogs />}
                   />
                 </Route>
               </Route>

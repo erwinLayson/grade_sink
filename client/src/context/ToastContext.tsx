@@ -62,7 +62,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Auto-close if duration is set
     if (toast.duration !== 0) {
-      const timeout = setTimeout(() => removeToast(id), toast.duration || 4000);
+      setTimeout(() => removeToast(id), toast.duration || 4000);
       return id;
     }
 
