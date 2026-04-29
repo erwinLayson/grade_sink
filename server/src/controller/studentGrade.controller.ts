@@ -1,8 +1,22 @@
 import { Request, Response } from "express";
 import StudentGradeService from "../service/studentGrade/studentGrade.service";
 import StudentGradeModel from "../model/studentGrade.model";
+import TeacherModel from "../model/teacher.model";
 import { pool } from "../config/dbConnection.config";
 import { StudentGradeDTO } from "../constant/studentGrade.constant";
+
+async function resolveTeacherIdFromRequest(req: Request) {
+  const user = (req as any).user as { email?: string; role?: string } | undefined;
+
+  if (!user?.email) {
+    return null;
+  }
+
+  const teacherModel = new TeacherModel(pool);
+  const teacher = await teacherModel.getTeacherByEmail(user.email);
+
+  return teacher?.id ?? null;
+}
 
 export async function getAllGrades(req: Request, res: Response) {
   try {
@@ -55,13 +69,34 @@ export async function getGradesByStudent(req: Request<{ studentId: string }>, re
 export async function createGrade(req: Request, res: Response) {
   try {
     const { student_id, subject_id, teacher_id, grade, quarter }: StudentGradeDTO = req.body;
+    const user = (req as any).user as { role?: string } | undefined;
+    const gradeService = new StudentGradeService(new StudentGradeModel(pool));
 
-    if (!student_id || !subject_id || !teacher_id || grade === undefined || !quarter) {
+    const resolvedTeacherId = user?.role === "teacher"
+      ? await resolveTeacherIdFromRequest(req)
+      : teacher_id;
+
+    if (!student_id || !subject_id || !resolvedTeacherId || grade === undefined || !quarter) {
       return res.status(400).json({ success: false, msg: "All grade fields are required" });
     }
 
-    const gradeService = new StudentGradeService(new StudentGradeModel(pool));
-    const result = await gradeService.createStudentGrade({ student_id, subject_id, teacher_id, grade, quarter });
+    const existingGrade = await gradeService.getStudentGradeByStudentSubjectQuarter(student_id, subject_id, quarter);
+
+    if (existingGrade) {
+      return res.status(409).json({
+        success: false,
+        msg: "Grade already exists for this student, subject, and quarter. Use edit instead.",
+        data: existingGrade,
+      });
+    }
+
+    const result = await gradeService.createStudentGrade({
+      student_id,
+      subject_id,
+      teacher_id: resolvedTeacherId,
+      grade,
+      quarter,
+    });
     
     if (result) {
       return res.status(201).json({ success: true, msg: "Grade created successfully", data: { id: result } });
@@ -81,8 +116,9 @@ export async function updateGrade(req: Request<{ id: string }>, res: Response) {
     
     // Check if teacher is updating their own grade
     if (user.role === "teacher") {
+      const teacherId = await resolveTeacherIdFromRequest(req);
       const grade = await gradeService.getStudentGradeById(id);
-      if (!grade || grade.teacher_id !== user.id) {
+      if (!grade || !teacherId || grade.teacher_id !== teacherId) {
         return res.status(403).json({ success: false, msg: "You can only update your own grades" });
       }
     }

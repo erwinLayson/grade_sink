@@ -57,6 +57,33 @@ class StudentGradeModel {
     }
   }
 
+  async getStudentGradeByStudentSubjectQuarter(
+    student_id: number,
+    subject_id: number,
+    quarter: string,
+  ): Promise<StudentGrade | null> {
+    try {
+      const [rows] = await this.pool.query(
+        `SELECT * FROM student_grades
+         WHERE student_id = ? AND subject_id = ? AND quarter = ?
+         ORDER BY id DESC
+         LIMIT 1`,
+        [student_id, subject_id, quarter],
+      );
+
+      const grades = rows as StudentGrade[];
+
+      if (grades.length <= 0) {
+        return null;
+      }
+
+      return grades[0] ?? null;
+    } catch (e) {
+      console.log(`....Fetching grade by student, subject, quarter ${e}`);
+      throw new Error(`${e}`);
+    }
+  }
+
   async updateStudentGradeById(id: number, data: Partial<StudentGradeDTO>): Promise<number> {
     try {
       const keys = Object.keys(data);

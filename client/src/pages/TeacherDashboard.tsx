@@ -1,276 +1,462 @@
-import { useState, useEffect, useContext } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import { UserContext } from "../context/userContext";
+import { FaArrowRight, FaChartBar, FaSchool, FaUsers } from "react-icons/fa";
 
 interface TeacherClass {
   id: number;
   name: string;
   section: string;
-  school_year: string;
-  school_level: string;
+  school_year?: string;
+  school_level?: string;
 }
 
-interface TeacherSubject {
+interface Student {
   id: number;
-  code: string;
-  name: string;
+  student_id: number;
+  first_name: string;
+  last_name: string;
+  sex?: string;
 }
+
+interface StudentGrade {
+  id: number;
+  student_id: number;
+  grade: number;
+  quarter: string;
+}
+
+type StudentPerformance = {
+  student: Student;
+  gradeValue: number | null;
+};
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  tone: string;
+}) {
+  return (
+    <div className="group rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+            {label}
+          </p>
+          <div className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
+            {value}
+          </div>
+        </div>
+        <div className={`rounded-2xl p-3 ${tone}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="border-b border-slate-200 bg-slate-50/80 p-6">
+        <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+        <p className="mt-1 text-sm text-slate-600">{description}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+const GRADE_BUCKETS = [
+  { label: "Below 75", min: Number.NEGATIVE_INFINITY, max: 74 },
+  { label: "75-79", min: 75, max: 79 },
+  { label: "80-84", min: 80, max: 84 },
+  { label: "85-89", min: 85, max: 89 },
+  { label: "90-94", min: 90, max: 94 },
+  { label: "95+", min: 95, max: Number.POSITIVE_INFINITY },
+] as const;
 
 export default function TeacherDashboard() {
   const { user } = useContext(UserContext);
-  const [classes, setClasses] = useState<TeacherClass[]>([]);
-  const [subjects, setSubjects] = useState<TeacherSubject[]>([]);
-  const [handledClasses, setHandledClasses] = useState<TeacherClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [teacherId, setTeacherId] = useState<number | null>(null);
+  const [advisoryClass, setAdvisoryClass] = useState<TeacherClass | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [studentGrades, setStudentGrades] = useState<
+    Record<number, StudentGrade[]>
+  >({});
+  const [selectedQuarter, setSelectedQuarter] = useState<
+    "all" | "1" | "2" | "3"
+  >("all");
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) {
+      return;
+    }
 
-    const load = async () => {
+    const loadDashboard = async () => {
       try {
+        setLoading(true);
+
+        let resolvedTeacherId = user.id;
+
         if (user.role === "teacher") {
-          // resolve teacher record by email to get teachers.id
-          const tRes = await axios.get(
+          const teacherResponse = await axios.get(
             `http://localhost:7000/teachers/email/${encodeURIComponent(user.email)}`,
             { withCredentials: true },
           );
-          const teacher = tRes.data?.data;
-          const teacherId = teacher?.id ?? user.id;
-          await fetchTeacherData(teacherId);
-        } else {
-          // non-teacher roles: use user.id
-          await fetchTeacherData(user.id);
+          resolvedTeacherId = teacherResponse.data?.data?.id ?? user.id;
         }
-      } catch (err) {
-        // fallback to using user.id
-        await fetchTeacherData(user.id);
+
+        setTeacherId(resolvedTeacherId);
+
+        const classResponse = await axios.get(
+          `http://localhost:7000/class-teachers/teacher/${resolvedTeacherId}?limit=1000`,
+          { withCredentials: true },
+        );
+
+        const advisory = classResponse.data?.data?.[0] ?? null;
+        setAdvisoryClass(advisory);
+
+        if (!advisory) {
+          setStudents([]);
+          setStudentGrades({});
+          return;
+        }
+
+        const studentsResponse = await axios.get(
+          `http://localhost:7000/class-students/class/${advisory.id}?limit=1000`,
+          { withCredentials: true },
+        );
+
+        const advisoryStudents = studentsResponse.data?.data || [];
+        setStudents(advisoryStudents);
+
+        const gradeResponses = await Promise.all(
+          advisoryStudents.map((student: Student) =>
+            axios.get(`http://localhost:7000/grades/student/${student.id}`, {
+              withCredentials: true,
+            }),
+          ),
+        );
+
+        const gradesMap = advisoryStudents.reduce<
+          Record<number, StudentGrade[]>
+        >((acc, student, index) => {
+          acc[student.id] = gradeResponses[index]?.data?.data || [];
+          return acc;
+        }, {});
+
+        setStudentGrades(gradesMap);
+        setError(null);
+      } catch (e) {
+        const errorMsg = axios.isAxiosError(e)
+          ? e.response?.data?.msg || e.message
+          : String(e);
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
       }
     };
 
-    load();
-  }, [user?.id]);
+    loadDashboard();
+  }, [user?.id, user?.email, user?.role]);
 
-  const fetchTeacherData = async (teacherId?: number) => {
-    try {
-      setLoading(true);
-      const id = teacherId ?? user?.id;
-      const [classRes, subjectRes, handledRes] = await Promise.all([
-        axios.get(
-          `http://localhost:7000/class-teachers/teacher/${id}?limit=1000`,
-          { withCredentials: true },
-        ),
-        axios.get(
-          `http://localhost:7000/teacher-subjects/teacher/${id}?limit=1000`,
-          { withCredentials: true },
-        ),
-        axios.get(
-          `http://localhost:7000/class-subjects/teacher/${id}?limit=1000`,
-          { withCredentials: true },
-        ),
-      ]);
-      setClasses(classRes.data?.data || []);
-      setSubjects(subjectRes.data?.data || []);
-      setHandledClasses(handledRes.data?.data || []);
-      setError(null);
-    } catch (e) {
-      const errorMsg = axios.isAxiosError(e)
-        ? e.response?.data?.msg || e.message
-        : String(e);
-      setError(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const studentPerformance = useMemo<StudentPerformance[]>(() => {
+    return students.map((student) => {
+      const grades = studentGrades[student.id] || [];
+      const validGrades = grades.filter((grade) =>
+        selectedQuarter === "all" ? true : grade.quarter === selectedQuarter,
+      );
 
-  if (loading)
+      if (validGrades.length === 0) {
+        return { student, gradeValue: null };
+      }
+
+      const average =
+        validGrades.reduce((sum, grade) => sum + grade.grade, 0) /
+        validGrades.length;
+
+      return { student, gradeValue: average };
+    });
+  }, [students, studentGrades, selectedQuarter]);
+
+  const totalStudents = students.length;
+  const maleCount = students.filter((student) =>
+    (student.sex || "").toLowerCase().includes("male"),
+  ).length;
+  const femaleCount = students.filter((student) =>
+    (student.sex || "").toLowerCase().includes("female"),
+  ).length;
+
+  const gradeDistribution = useMemo(() => {
+    const counts = GRADE_BUCKETS.map((bucket) => ({
+      label: bucket.label,
+      count: 0,
+    }));
+
+    studentPerformance.forEach((entry) => {
+      if (entry.gradeValue === null) {
+        return;
+      }
+
+      const bucketIndex = GRADE_BUCKETS.findIndex(
+        (bucket) =>
+          entry.gradeValue! >= bucket.min && entry.gradeValue! <= bucket.max,
+      );
+
+      if (bucketIndex >= 0) {
+        counts[bucketIndex].count += 1;
+      }
+    });
+
+    return counts;
+  }, [studentPerformance]);
+
+  if (loading) {
     return (
-      <div className="p-8 text-center text-lg text-slate-600 bg-slate-50 min-h-screen">
-        Loading dashboard...
-      </div>
+      <article className="p-8 bg-slate-50 min-h-screen">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-lg text-slate-600 font-medium">
+            Loading dashboard...
+          </p>
+        </div>
+      </article>
     );
+  }
 
   return (
     <article className="p-8 bg-slate-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">
-          Welcome, {user?.first_name}
-        </h1>
-        <p className="text-lg text-slate-600">
-          Manage your classes and subjects
-        </p>
+      <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">
+            Welcome, {user?.username || "Teacher"}
+          </h1>
+          <p className="text-lg text-slate-600">
+            Advisory class summary and grade distribution.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to="/teacher/my-classes"
+            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white font-semibold hover:bg-indigo-700 transition-colors"
+          >
+            My Classes
+          </Link>
+          <Link
+            to="/grade-management"
+            className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-white font-semibold hover:bg-emerald-700 transition-colors"
+          >
+            Grade Management
+          </Link>
+        </div>
       </div>
 
       {error && (
-        <div className="p-6 bg-rose-50 text-rose-700 rounded-lg mb-6 border border-rose-200">
+        <div className="p-6 bg-rose-50 text-rose-700 rounded-xl border border-rose-200 mb-6">
           <p className="font-medium">{error}</p>
-          <button
-            onClick={fetchTeacherData}
-            className="mt-4 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium"
-          >
-            Retry
-          </button>
         </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-200 p-6">
-          <div className="text-4xl font-bold text-indigo-600 mb-2">
-            {classes.length}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg md:col-span-2 xl:col-span-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+            Advisory Class
+          </p>
+          <div className="mt-3 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">
+                {advisoryClass ? advisoryClass.name : "No advisory class"}
+              </h2>
+              <p className="mt-2 text-sm text-slate-600 leading-6">
+                {advisoryClass
+                  ? `${advisoryClass.section} • ${advisoryClass.school_year || ""}`
+                  : "No advisory class found for this account."}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-indigo-50 p-3 text-indigo-700">
+              <FaSchool className="text-xl" />
+            </div>
           </div>
-          <p className="text-slate-600 font-medium">Classes</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-200 p-6">
-          <div className="text-4xl font-bold text-emerald-600 mb-2">
-            {subjects.length}
-          </div>
-          <p className="text-slate-600 font-medium">Subjects</p>
-        </div>
+
+        <MetricCard
+          label="Total Students"
+          value={totalStudents}
+          tone="bg-indigo-50 text-indigo-700"
+          icon={<FaUsers className="text-xl" />}
+        />
+
+        <MetricCard
+          label="Male Students"
+          value={maleCount}
+          tone="bg-sky-50 text-sky-700"
+          icon={<FaUsers className="text-xl" />}
+        />
+
+        <MetricCard
+          label="Female Students"
+          value={femaleCount}
+          tone="bg-pink-50 text-pink-700"
+          icon={<FaUsers className="text-xl" />}
+        />
       </div>
 
-      {/* Classes Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
-        <div className="p-6 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">My Classes</h2>
+      <SectionCard
+        title="Grade Distribution"
+        description="Based on average grade per student across all quarters in the advisory class."
+      >
+        <div className="grid gap-5 p-6 sm:grid-cols-2 xl:grid-cols-3">
+          {gradeDistribution.map((bucket) => (
+            <div
+              key={bucket.label}
+              className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Grade Band
+                  </p>
+                  <h3 className="mt-2 text-lg font-bold text-slate-900">
+                    {bucket.label}
+                  </h3>
+                </div>
+                <div className="rounded-2xl bg-slate-100 p-2 text-slate-700">
+                  <FaChartBar className="text-base" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-end justify-between gap-4">
+                <div className="text-4xl font-semibold tracking-tight text-slate-900">
+                  {bucket.count}
+                </div>
+                <p className="text-sm text-slate-500">students</p>
+              </div>
+            </div>
+          ))}
         </div>
-        {classes.length > 0 ? (
+      </SectionCard>
+
+      <section className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-slate-200 bg-slate-50/80 p-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">
+              Advisory Class Student List
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Quarter filter only affects this student list.
+            </p>
+          </div>
+
+          <div className="w-full md:w-64">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Quarter Filter
+            </label>
+            <select
+              value={selectedQuarter}
+              onChange={(e) =>
+                setSelectedQuarter(e.target.value as "all" | "1" | "2" | "3")
+              }
+              className="w-full border border-slate-300 px-4 py-2 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+            >
+              <option value="all">All Quarters</option>
+              <option value="1">Quarter 1</option>
+              <option value="2">Quarter 2</option>
+              <option value="3">Quarter 3</option>
+            </select>
+          </div>
+        </div>
+
+        {studentPerformance.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Class
+                    Student
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Section
+                    Sex
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Year
+                    Average Grade
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Level
+                    Status
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {classes.map((cls) => (
-                  <tr
-                    key={cls.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-slate-900">{cls.name}</td>
-                    <td className="px-6 py-4 text-slate-600">{cls.section}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {cls.school_year}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {cls.school_level}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-8 text-center text-slate-500">
-            <p className="font-medium">No classes assigned</p>
-          </div>
-        )}
-      </div>
+                {studentPerformance.map(({ student, gradeValue }) => {
+                  const status =
+                    gradeValue === null
+                      ? "No Grade"
+                      : gradeValue < 75
+                        ? "Below 75"
+                        : gradeValue < 80
+                          ? "75-79"
+                          : gradeValue < 85
+                            ? "80-84"
+                            : gradeValue < 90
+                              ? "85-89"
+                              : gradeValue < 95
+                                ? "90-94"
+                                : "95+";
 
-      {/* Subjects Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-6 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">My Subjects</h2>
-        </div>
-        {subjects.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Code
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Name
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {subjects.map((subject) => (
-                  <tr
-                    key={subject.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-slate-900 font-medium">
-                      {subject.code}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">{subject.name}</td>
-                  </tr>
-                ))}
+                  return (
+                    <tr
+                      key={student.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {student.first_name} {student.last_name}
+                          </p>
+                          <p className="text-sm text-slate-500 mt-0.5">
+                            Student ID: {student.student_id}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {student.sex || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-slate-900 font-semibold">
+                        {gradeValue === null ? "-" : gradeValue.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                          {status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="p-8 text-center text-slate-500">
-            <p className="font-medium">No subjects assigned</p>
+          <div className="p-10 text-center text-slate-500">
+            <p className="font-medium">
+              No students found in this advisory class
+            </p>
           </div>
         )}
-      </div>
-
-      {/* Classes With My Subjects Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mt-8">
-        <div className="p-6 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">
-            Classes With My Subjects
-          </h2>
-        </div>
-        {handledClasses.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Class
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Section
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Year
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Level
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {handledClasses.map((cls) => (
-                  <tr
-                    key={cls.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-slate-900">{cls.name}</td>
-                    <td className="px-6 py-4 text-slate-600">{cls.section}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {cls.school_year}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {cls.school_level}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-8 text-center text-slate-500">
-            <p className="font-medium">No classes contain your subjects</p>
-          </div>
-        )}
-      </div>
+      </section>
     </article>
   );
 }

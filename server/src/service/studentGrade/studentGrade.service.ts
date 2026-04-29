@@ -69,6 +69,36 @@ class StudentGradeService {
     }
   }
 
+  async getStudentGradeByStudentSubjectQuarter(
+    student_id: number,
+    subject_id: number,
+    quarter: string,
+  ): Promise<StudentGradeResponse | null> {
+    try {
+      const grade = await this.studentGradeModel.getStudentGradeByStudentSubjectQuarter(
+        student_id,
+        subject_id,
+        quarter,
+      );
+
+      if (!grade) {
+        return null;
+      }
+
+      return {
+        id: grade.id,
+        student_id: grade.student_id,
+        subject_id: grade.subject_id,
+        teacher_id: grade.teacher_id,
+        grade: grade.grade,
+        quarter: grade.quarter,
+      };
+    } catch (e) {
+      console.log(`Error ${e}`);
+      throw new Error(`Error: ${e}`);
+    }
+  }
+
   async updateStudentGradeById(id: number, data: Partial<StudentGradeDTO>): Promise<number> {
     try {
       const result = await this.studentGradeModel.updateStudentGradeById(id, data);

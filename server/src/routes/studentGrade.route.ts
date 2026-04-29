@@ -26,7 +26,7 @@ route.get("/grades/student/:studentId",
 
 route.post("/grades", 
   validateToken,
-  allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+  allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.TEACHER]),
   createGrade
 );
 
