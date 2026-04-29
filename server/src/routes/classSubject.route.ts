@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllClassSubjects, getClassSubjectById, getSubjectsByClass, createClassSubject, deleteClassSubject, getClassesByTeacherSubjects } from "../controller/classSubject.controller";
+import { getAllClassSubjects, getClassSubjectById, getSubjectsByClass, createClassSubject, deleteClassSubject, getClassesByTeacherSubjects, updateClassSubjectTeacher } from "../controller/classSubject.controller";
 import validateToken from "../middleware/validateToken";
 import allowedRole from "../middleware/allowedRole";
 import { ROLES } from "../constant/userRole";
@@ -34,6 +34,12 @@ route.post("/class-subjects",
   validateToken,
   allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
   createClassSubject
+);
+
+route.put("/class-subjects/:id/teacher",
+  validateToken,
+  allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+  updateClassSubjectTeacher
 );
 
 route.delete("/class-subjects/:id", 

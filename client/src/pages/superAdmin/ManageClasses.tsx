@@ -87,7 +87,12 @@ export default function ManageClasses() {
   // Modal states
   const [openModal, setOpenModal] = useState(false);
   const [modalType, setModalType] = useState<
-    "create" | "update" | "addStudent" | "addSubject" | ""
+    | "create"
+    | "update"
+    | "addStudent"
+    | "addSubject"
+    | "editSubjectTeacher"
+    | ""
   >("");
 
   // Create/Update class form
@@ -107,6 +112,14 @@ export default function ManageClasses() {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [subjectTeachers, setSubjectTeachers] = useState<any[]>([]);
   const [selectedSubjectTeacher, setSelectedSubjectTeacher] = useState("");
+
+  // Edit subject teacher form
+  const [editingSubject, setEditingSubject] = useState<ClassSubject | null>(
+    null,
+  );
+  const [editTeacherId, setEditTeacherId] = useState("");
+  const [availableTeachersForSubject, setAvailableTeachersForSubject] =
+    useState<any[]>([]);
 
   const toast = useToastHelper();
   const { addToast } = useToast();
@@ -380,6 +393,66 @@ export default function ManageClasses() {
     }
   }
 
+  async function handleEditSubjectTeacherClick(subject: ClassSubject) {
+    setEditingSubject(subject);
+    setEditTeacherId(subject.teacher_id.toString());
+    setModalType("editSubjectTeacher");
+    setOpenModal(true);
+
+    // Load available teachers for this subject
+    try {
+      const response = await axios.get(
+        `http://localhost:7000/teacher-subjects?limit=1000`,
+        { withCredentials: true },
+      );
+
+      const allTeacherSubjects = response.data?.data || [];
+      const teachersForSubject = allTeacherSubjects
+        .filter((ts: any) => ts.subject_id === subject.subject_id)
+        .map((ts: any) => {
+          const teacher = teachers.find((t) => t.id === ts.teacher_id);
+          return {
+            id: ts.teacher_id,
+            name: teacher
+              ? `${teacher.first_name} ${teacher.last_name}`
+              : "Unknown",
+          };
+        });
+
+      setAvailableTeachersForSubject(teachersForSubject);
+    } catch (e) {
+      console.error("Error fetching teachers for subject", e);
+    }
+  }
+
+  async function handleEditSubjectTeacher(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!editTeacherId || !editingSubject) {
+      toast.warning("Please select a teacher");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `http://localhost:7000/class-subjects/${editingSubject.id}/teacher`,
+        {
+          teacher_id: parseInt(editTeacherId),
+        },
+        { withCredentials: true },
+      );
+
+      toast.success("Teacher assignment updated successfully");
+      handleCloseModal();
+      await fetchClassDetails(selectedClassDetail!.id);
+    } catch (e) {
+      const errorMsg = axios.isAxiosError(e)
+        ? e.response?.data?.msg || e.message
+        : String(e);
+      toast.error(errorMsg);
+    }
+  }
+
   async function handleClassModalSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -516,6 +589,9 @@ export default function ManageClasses() {
     setSelectedStudent("");
     setSelectedSubject("");
     setSelectedSubjectTeacher("");
+    setEditingSubject(null);
+    setEditTeacherId("");
+    setAvailableTeachersForSubject([]);
   }
 
   if (loading)
@@ -541,7 +617,7 @@ export default function ManageClasses() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-100/70 to-transparent" />
         <div className="pointer-events-none absolute -left-24 top-24 h-64 w-64 rounded-full bg-sky-200/30 blur-3xl" />
         <div className="pointer-events-none absolute -right-24 top-40 h-64 w-64 rounded-full bg-emerald-200/30 blur-3xl" />
-        {/* Modal for adding students/subjects */}
+        {/* Modal for adding students/subjects and editing teachers */}
         <div
           className={`fixed ${
             openModal ? "block opacity-100" : "hidden opacity-0"
@@ -549,18 +625,27 @@ export default function ManageClasses() {
         >
           <form
             onSubmit={
-              modalType === "addStudent" ? handleAddStudent : handleAddSubject
+              modalType === "addStudent"
+                ? handleAddStudent
+                : modalType === "editSubjectTeacher"
+                  ? handleEditSubjectTeacher
+                  : handleAddSubject
             }
             className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)] my-8"
           >
             <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50 to-emerald-50 px-6 py-5">
               <div className="grid place-items-center text-center">
                 <h1 className="text-2xl font-bold text-slate-900">
-                  {modalType === "addStudent" ? "Add Student" : "Add Subject"}
+                  {modalType === "addStudent"
+                    ? "Add Student"
+                    : modalType === "editSubjectTeacher"
+                      ? "Edit Subject Teacher"
+                      : "Add Subject"}
                 </h1>
                 <p className="mt-1 text-sm text-slate-500">
-                  Keep the class organized with clear student and subject
-                  assignments.
+                  {modalType === "editSubjectTeacher"
+                    ? "Update the teacher for this subject in the class. All enrolled students will be updated."
+                    : "Keep the class organized with clear student and subject assignments."}
                 </p>
               </div>
               <span
@@ -648,11 +733,41 @@ export default function ManageClasses() {
                 </>
               )}
 
+              {modalType === "editSubjectTeacher" && (
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Select New Teacher *
+                  </label>
+                  <select
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                    value={editTeacherId}
+                    onChange={(e) => setEditTeacherId(e.target.value)}
+                    required
+                  >
+                    <option value="">Select a teacher</option>
+                    {availableTeachersForSubject.map((teacher) => (
+                      <option key={teacher.id} value={teacher.id}>
+                        {teacher.name}
+                      </option>
+                    ))}
+                  </select>
+                  {editingSubject && (
+                    <p className="mt-3 text-sm text-slate-600">
+                      Subject: <strong>{editingSubject.name}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+
               <button
                 type="submit"
                 className="mt-2 w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 active:scale-[0.99]"
               >
-                {modalType === "addStudent" ? "Add Student" : "Add Subject"}
+                {modalType === "addStudent"
+                  ? "Add Student"
+                  : modalType === "editSubjectTeacher"
+                    ? "Update Teacher"
+                    : "Add Subject"}
               </button>
             </article>
           </form>
@@ -866,7 +981,16 @@ export default function ManageClasses() {
                       <td className="px-6 py-4">{subject.name}</td>
                       <td className="px-6 py-4">{subject.teacher_name}</td>
                       <td className="px-6 py-4">
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={() =>
+                              handleEditSubjectTeacherClick(subject)
+                            }
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Edit Teacher"
+                          >
+                            <FaEdit />
+                          </button>
                           <button
                             onClick={() => handleDeleteSubject(subject.id)}
                             className="text-red-600 hover:text-red-800"

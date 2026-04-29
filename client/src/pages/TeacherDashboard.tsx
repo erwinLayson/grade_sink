@@ -2,7 +2,8 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { UserContext } from "../context/userContext";
-import { FaArrowRight, FaChartBar, FaSchool, FaUsers } from "react-icons/fa";
+import { FaArrowRight, FaChartBar, FaSchool, FaUsers, FaDownload, FaSpinner, FaTimes, FaCheck } from "react-icons/fa";
+import { useToastHelper } from "../context/ToastContext";
 
 interface TeacherClass {
   id: number;
@@ -102,6 +103,12 @@ export default function TeacherDashboard() {
   const [selectedQuarter, setSelectedQuarter] = useState<
     "all" | "1" | "2" | "3"
   >("all");
+
+  // PDF generation states
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<number>>(new Set());
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const toast = useToastHelper();
 
   useEffect(() => {
     if (!user?.id) {
@@ -264,6 +271,28 @@ export default function TeacherDashboard() {
           >
             Grade Management
           </Link>
+        {advisoryClass && (
+          <button
+            onClick={() => {
+              setSelectedStudentIds(new Set(students.map(s => s.id)));
+              setShowPdfModal(true);
+            }}
+            disabled={isGeneratingPdf}
+            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-white font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGeneratingPdf ? (
+              <>
+                <FaSpinner className="animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FaDownload size={16} />
+                Download Grade PDFs
+              </>
+            )}
+          </button>
+        )}
         </div>
       </div>
 
@@ -457,6 +486,134 @@ export default function TeacherDashboard() {
           </div>
         )}
       </section>
+
+      {/* PDF Selection Modal */}
+      {showPdfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 border-b border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Select Students for PDF Generation</h2>
+              <button
+                onClick={() => setShowPdfModal(false)}
+                disabled={isGeneratingPdf}
+                className="text-slate-500 hover:text-slate-700 disabled:opacity-50"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body - Student List */}
+            <div className="p-6 space-y-2">
+              <div className="mb-4 flex gap-2">
+                <button
+                  onClick={() => setSelectedStudentIds(new Set(students.map(s => s.id)))}
+                  className="text-sm px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                >
+                  Select All
+                </button>
+                <button
+                  onClick={() => setSelectedStudentIds(new Set())}
+                  className="text-sm px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors"
+                >
+                  Deselect All
+                </button>
+              </div>
+              
+              {students.map((student) => (
+                <div
+                  key={student.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    const newSet = new Set(selectedStudentIds);
+                    if (newSet.has(student.id)) {
+                      newSet.delete(student.id);
+                    } else {
+                      newSet.add(student.id);
+                    }
+                    setSelectedStudentIds(newSet);
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedStudentIds.has(student.id)}
+                    onChange={() => {}}
+                    className="w-4 h-4 text-indigo-600 rounded cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-900">
+                      {student.first_name} {student.last_name}
+                    </p>
+                    <p className="text-xs text-slate-500">ID: {student.student_id}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 border-t border-slate-200 bg-slate-50 px-6 py-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowPdfModal(false)}
+                disabled={isGeneratingPdf}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (selectedStudentIds.size === 0) {
+                    toast.warning("Please select at least one student");
+                    return;
+                  }
+                  
+                  try {
+                    setIsGeneratingPdf(true);
+                    toast.info(`Generating PDFs for ${selectedStudentIds.size} student(s)...`);
+                    
+                    const resp = await axios.post(
+                      `http://localhost:7000/classes/${advisoryClass?.id}/generate-pdfs`,
+                      { studentIds: Array.from(selectedStudentIds) },
+                      { withCredentials: true, responseType: "blob" },
+                    );
+
+                    const blob = new Blob([resp.data], { type: "application/zip" });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `class_${advisoryClass?.id}_${selectedStudentIds.size}_students_grades.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    
+                    toast.success(`Successfully generated ${selectedStudentIds.size} PDF(s)`);
+                    setShowPdfModal(false);
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Failed to generate PDFs. See console for details.");
+                  } finally {
+                    setIsGeneratingPdf(false);
+                  }
+                }}
+                disabled={isGeneratingPdf || selectedStudentIds.size === 0}
+                className="px-4 py-2 rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isGeneratingPdf ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FaDownload size={16} />
+                    Download ({selectedStudentIds.size})
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

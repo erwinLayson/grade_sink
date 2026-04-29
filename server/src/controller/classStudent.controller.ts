@@ -60,11 +60,38 @@ export async function createClassStudent(req: Request, res: Response) {
       return res.status(400).json({ success: false, msg: "Student ID and Class ID are required" });
     }
 
-    const csService = new ClassStudentService(new ClassStudentModel(pool));
-    const result = await csService.createClassStudent({ student_id, class_id });
-    
-    if (result) {
-      return res.status(201).json({ success: true, msg: "Student added to class successfully", data: { id: result } });
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const csService = new ClassStudentService(new ClassStudentModel(connection as unknown as typeof pool));
+      const result = await csService.createClassStudent({ student_id, class_id });
+
+      await connection.query(
+        `INSERT INTO student_subject (student_id, subject_id, teacher_id)
+         SELECT ?, cs.subject_id, ths.teacher_id
+         FROM class_subjects cs
+         INNER JOIN teacher_handle_subject ths ON ths.subject_id = cs.subject_id
+         WHERE cs.class_id = ?
+         AND ths.teacher_id IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM student_subject ss
+           WHERE ss.student_id = ? AND ss.subject_id = cs.subject_id
+         )`,
+        [student_id, class_id, student_id],
+      );
+
+      await connection.commit();
+
+      if (result) {
+        return res.status(201).json({ success: true, msg: "Student added to class successfully", data: { id: result } });
+      }
+    } catch (e) {
+      await connection.rollback();
+      throw e;
+    } finally {
+      connection.release();
     }
   } catch (e) {
     res.status(500).json({ success: false, msg: `Error: ${e}` });

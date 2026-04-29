@@ -82,8 +82,13 @@ export default function GetUserProvider({
       return;
     }
 
-    fetchUsers();
-  }, []); // Empty dependency array - only run once on mount
+    // Add small delay to ensure auth is set up before fetching users
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [fetchUsers]); // Empty dependency array - only run once on mount
 
   return (
     <GetUserContext.Provider

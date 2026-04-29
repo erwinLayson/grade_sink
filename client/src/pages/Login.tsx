@@ -30,8 +30,12 @@ export default function Login() {
     const dashboardRoute = getDashboardRoute(user.role);
 
     if (dashboardRoute) {
-      navigate(dashboardRoute, { replace: true });
-      return;
+      console.log("[Login] User authenticated, navigating to:", dashboardRoute);
+      // Add small delay to allow logs to be read
+      const timer = setTimeout(() => {
+        navigate(dashboardRoute, { replace: true });
+      }, 1000);
+      return () => clearTimeout(timer);
     }
 
     toast.error("Your account role does not have a dashboard route.");

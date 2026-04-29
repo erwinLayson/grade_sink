@@ -14,6 +14,7 @@ route.get("/class-subjects/:id", validateToken_1.default, (0, allowedRole_1.defa
 route.get("/class-subjects/class/:classId", validateToken_1.default, (0, allowedRole_1.default)([userRole_1.ROLES.ADMIN, userRole_1.ROLES.SUPER_ADMIN, userRole_1.ROLES.TEACHER]), classSubject_controller_1.getSubjectsByClass);
 route.get("/class-subjects/teacher/:teacherId", validateToken_1.default, (0, allowedRole_1.default)([userRole_1.ROLES.ADMIN, userRole_1.ROLES.SUPER_ADMIN, userRole_1.ROLES.TEACHER]), classSubject_controller_1.getClassesByTeacherSubjects);
 route.post("/class-subjects", validateToken_1.default, (0, allowedRole_1.default)([userRole_1.ROLES.ADMIN, userRole_1.ROLES.SUPER_ADMIN]), classSubject_controller_1.createClassSubject);
+route.put("/class-subjects/:id/teacher", validateToken_1.default, (0, allowedRole_1.default)([userRole_1.ROLES.ADMIN, userRole_1.ROLES.SUPER_ADMIN]), classSubject_controller_1.updateClassSubjectTeacher);
 route.delete("/class-subjects/:id", validateToken_1.default, (0, allowedRole_1.default)([userRole_1.ROLES.ADMIN, userRole_1.ROLES.SUPER_ADMIN]), classSubject_controller_1.deleteClassSubject);
 exports.default = route;
 //# sourceMappingURL=classSubject.route.js.map

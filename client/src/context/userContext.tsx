@@ -57,22 +57,30 @@ export default function UserContextProvider({
 
       try {
         const parsedUser = JSON.parse(userCredential) as UserProps;
-        const response = await axios.get("http://localhost:7000/auth/verify", {
-          withCredentials: true,
-        });
 
-        const verifiedUser = response.data?.data ?? parsedUser;
-        setUser(verifiedUser);
-        localStorage.setItem("userCredential", JSON.stringify(verifiedUser));
+        // Try to verify with backend, but fall back to local data if verification fails
+        try {
+          const response = await axios.get(
+            "http://localhost:7000/auth/verify",
+            {
+              withCredentials: true,
+            },
+          );
+          const verifiedUser = response.data?.data ?? parsedUser;
+          setUser(verifiedUser);
+          localStorage.setItem("userCredential", JSON.stringify(verifiedUser));
+        } catch (verifyError) {
+          // If verification fails, still trust the local data for now
+          // The interceptor will handle logout if needed on subsequent API calls
+          console.log(
+            "[UserContext] Auth verify failed, using local user data",
+          );
+          setUser(parsedUser);
+        }
       } catch (error) {
+        console.error("[UserContext] Error parsing user credential:", error);
         localStorage.removeItem("userCredential");
         setUser(null);
-
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          if (window.location.pathname !== "/login") {
-            window.location.replace("/login");
-          }
-        }
       } finally {
         setIsLoading(false);
       }

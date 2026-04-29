@@ -18,6 +18,7 @@ import classSubjectRoute from "./routes/classSubject.route.js";
 import classTeacherRoute from "./routes/classTeacher.route.js";
 import studentSubjectRoute from "./routes/studentSubject.route.js";
 import teacherHandleSubjectRoute from "./routes/teacherHandleSubject.route.js";
+import pdfRoute from "./routes/pdf.route";
 
 
 const app: Express = express();
@@ -49,6 +50,7 @@ app.use(classSubjectRoute);
 app.use(classTeacherRoute);
 app.use(studentSubjectRoute);
 app.use(teacherHandleSubjectRoute);
+app.use(pdfRoute);
 
 
 app.get("/", (req: Request, res: Response) => {

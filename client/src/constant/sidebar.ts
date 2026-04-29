@@ -22,6 +22,7 @@ export const DEFAULT_NAV_CONFIG: SideBarProps = {
   ],
   admin: [
     { path: "/admin/dashboard", label: "Dashboard", icon: FaHome },
+    { path: "/manage-users", label: "Manage Users", icon: FaUsers },
     { path: "/manage-teachers", label: "Manage Teachers", icon: FaChalkboard },
     { path: "/manage-students", label: "Manage Students", icon: FaUsers },
     { path: "/manage-classes", label: "Manage Classes", icon: FaBook },

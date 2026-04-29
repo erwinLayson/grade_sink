@@ -76,6 +76,7 @@ CREATE TABLE `class_subjects` (
   `id` bigint(20) NOT NULL,
   `class_id` bigint(20) NOT NULL,
   `subject_id` bigint(20) NOT NULL,
+  `teacher_id` bigint(20) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

@@ -6,6 +6,7 @@ import axios from "axios";
 
 // custom hooks
 import useGetUser from "../../hooks/useGetUser";
+import useUser from "../../hooks/useUser";
 import { useToastHelper } from "../../context/ToastContext";
 
 interface UserDetailsProps {
@@ -26,6 +27,7 @@ export default function ManageUser() {
   const [role, setrole] = useState("");
 
   // hooks
+  const { user } = useUser();
   const { users, isLoading, error, refetchUsers } = useGetUser();
   const toast = useToastHelper();
 
@@ -65,11 +67,20 @@ export default function ManageUser() {
     );
   }
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredUsers = users
+    .filter((listUser) => {
+      // If currently logged-in user is admin (not super_admin), hide super_admin users from the list
+      if (user && user.role === "admin") {
+        return listUser.role !== "super_admin";
+      }
+      // Super admin can see all users
+      return true;
+    })
+    .filter(
+      (user) =>
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -84,13 +95,21 @@ export default function ManageUser() {
     }
   };
 
-  function handleUpdate(user: any) {
-    console.log(user);
+  function handleUpdate(userToEdit: any) {
+    // Prevent admin from editing super_admin users
+    if (user && user.role === "admin" && userToEdit.role === "super_admin") {
+      toast.error("You cannot edit super admin users");
+      return;
+    }
+
+    console.log(userToEdit);
     // Populate form fields with selected user data
-    setUserName(user.username);
-    setemail(user.email);
+    setUserName(userToEdit.username);
+    setemail(userToEdit.email);
     setpassword(""); // Clear password for security
-    setrole(user.role);
+    setrole(userToEdit.role);
+    setModalType("update");
+    setOpenModal(true);
   }
 
   async function handleModalSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -375,11 +394,7 @@ export default function ManageUser() {
                       <div className="flex gap-3">
                         <button
                           className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-all duration-200 text-sm font-medium"
-                          onClick={() => {
-                            handleUpdate(user);
-                            setOpenModal(true);
-                            setModalType("update");
-                          }}
+                          onClick={() => handleUpdate(user)}
                         >
                           <FaEdit size={14} />
                           <span className="hidden sm:inline">Edit</span>

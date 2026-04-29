@@ -15,7 +15,6 @@ export interface ClassSubjectResponse {
     subject_id: number;
     code?: string;
     name?: string;
-    teacher_id?: number | null;
     teacher_name?: string | null;
 }
 //# sourceMappingURL=classSubject.constant.d.ts.map

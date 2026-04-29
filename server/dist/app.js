@@ -22,6 +22,7 @@ const classSubject_route_js_1 = __importDefault(require("./routes/classSubject.r
 const classTeacher_route_js_1 = __importDefault(require("./routes/classTeacher.route.js"));
 const studentSubject_route_js_1 = __importDefault(require("./routes/studentSubject.route.js"));
 const teacherHandleSubject_route_js_1 = __importDefault(require("./routes/teacherHandleSubject.route.js"));
+const pdf_route_1 = __importDefault(require("./routes/pdf.route"));
 const app = (0, express_1.default)();
 app.set("trust proxy", true);
 // database connection
@@ -47,6 +48,7 @@ app.use(classSubject_route_js_1.default);
 app.use(classTeacher_route_js_1.default);
 app.use(studentSubject_route_js_1.default);
 app.use(teacherHandleSubject_route_js_1.default);
+app.use(pdf_route_1.default);
 app.get("/", (req, res) => {
     res.json("Role base access example");
 });

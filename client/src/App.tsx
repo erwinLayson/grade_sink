@@ -50,12 +50,12 @@ export default function App() {
                 }
               >
                 <Route path="/" element={<MasterLayout />}>
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                  <Route path="/manage-users" element={<ManageUser />} />
-                  <Route path="/manage-classes" element={<ManageClasses />} />
-                  <Route path="/manage-teachers" element={<ManageTeachers />} />
-                  <Route path="/manage-students" element={<ManageStudents />} />
-                  <Route path="/manage-subjects" element={<ManageSubjects />} />
+                  <Route path="admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="manage-users" element={<ManageUser />} />
+                  <Route path="manage-classes" element={<ManageClasses />} />
+                  <Route path="manage-teachers" element={<ManageTeachers />} />
+                  <Route path="manage-students" element={<ManageStudents />} />
+                  <Route path="manage-subjects" element={<ManageSubjects />} />
                 </Route>
               </Route>
 
@@ -64,11 +64,11 @@ export default function App() {
               >
                 <Route path="/" element={<MasterLayout />}>
                   <Route
-                    path="/superadmin/dashboard"
+                    path="superadmin/dashboard"
                     element={<SuperAdminDashboard />}
                   />
                   <Route
-                    path="/super-admin/activity-logs"
+                    path="super-admin/activity-logs"
                     element={<ActivityLogs />}
                   />
                 </Route>
@@ -77,16 +77,16 @@ export default function App() {
               <Route element={<ProtectedRoutes allowedRoles={["teacher"]} />}>
                 <Route path="/" element={<MasterLayout />}>
                   <Route
-                    path="/teacher/dashboard"
+                    path="teacher/dashboard"
                     element={<TeacherDashboard />}
                   />
-                  <Route path="/teacher/my-classes" element={<MyClasses />} />
-                  <Route path="/teacher/profile" element={<TeacherProfile />} />
+                  <Route path="teacher/my-classes" element={<MyClasses />} />
+                  <Route path="teacher/profile" element={<TeacherProfile />} />
                   <Route
-                    path="/grade-management"
+                    path="grade-management"
                     element={<GradeManagement />}
                   />
-                  <Route path="/grades" element={<Grades />} />
+                  <Route path="grades" element={<Grades />} />
                 </Route>
               </Route>
             </Routes>

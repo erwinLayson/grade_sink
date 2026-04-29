@@ -13,14 +13,12 @@ function requireEnv(name) {
     return value;
 }
 function createTransporter() {
-    const host = requireEnv("SMTP_HOST");
-    const port = Number(requireEnv("SMTP_PORT"));
+    const service = requireEnv("SMTP_SERVICE");
     const secure = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
     const user = requireEnv("SMTP_USER");
     const pass = requireEnv("SMTP_PASS");
     return nodemailer_1.default.createTransport({
-        host,
-        port,
+        service,
         secure,
         auth: {
             user,

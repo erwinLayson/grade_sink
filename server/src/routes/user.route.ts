@@ -7,7 +7,7 @@ import { ROLES } from "../constant/userRole";
 const route: Router = Router();
 
 route.get("/users", validateToken,
-  allowedRole([ROLES.SUPER_ADMIN]),
+  allowedRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
   getAllUser)
 route.get("/users/:email", validateToken, getUserByEmail)
 

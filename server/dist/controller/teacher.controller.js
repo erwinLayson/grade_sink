@@ -65,17 +65,58 @@ async function getTeacherByEmail(req, res) {
 async function createTeacher(req, res) {
     try {
         const { first_name, middle_name, last_name, email } = req.body;
-        if (!email) {
+        const normalizedEmail = email?.trim().toLowerCase();
+        if (!normalizedEmail) {
             return res.status(400).json({ success: false, msg: "Email is required" });
         }
-        const teacherService = new teacher_service_1.default(new teacher_model_1.default(dbConnection_config_1.pool));
-        const result = await teacherService.createTeacher({ first_name, middle_name, last_name, email });
-        if (result) {
-            return res.status(201).json({ success: true, msg: "Teacher created successfully", data: { id: result } });
+        const teacherModel = new teacher_model_1.default(dbConnection_config_1.pool);
+        const userModel = new user_model_1.default(dbConnection_config_1.pool);
+        const [existingTeacher, existingUser] = await Promise.all([
+            teacherModel.getTeacherByEmail(normalizedEmail),
+            userModel.getUserByEmail(normalizedEmail),
+        ]);
+        if (existingTeacher || existingUser) {
+            return res.status(409).json({
+                success: false,
+                msg: "A teacher or user with this email already exists",
+            });
+        }
+        const connection = await dbConnection_config_1.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const transactionalTeacherModel = new teacher_model_1.default(connection);
+            const transactionalUserModel = new user_model_1.default(connection);
+            const teacherId = await transactionalTeacherModel.createTeacher({
+                first_name,
+                middle_name,
+                last_name,
+                email: normalizedEmail,
+            });
+            const defaultPassword = await bcrypt_1.default.hash("12345", 10);
+            const userId = await transactionalUserModel.createUser({
+                email: normalizedEmail,
+                username: normalizedEmail,
+                role: userRole_1.ROLES.TEACHER,
+                password: defaultPassword,
+            });
+            await connection.commit();
+            return res.status(201).json({
+                success: true,
+                msg: "Teacher created successfully",
+                data: { teacher_id: teacherId, user_id: userId },
+            });
+        }
+        catch (e) {
+            await connection.rollback();
+            throw e;
+        }
+        finally {
+            connection.release();
         }
     }
     catch (e) {
-        res.status(500).json({ success: false, msg: `Error: ${e}` });
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        res.status(500).json({ success: false, msg: `Error: ${errorMessage}` });
     }
 }
 async function updateTeacher(req, res) {
