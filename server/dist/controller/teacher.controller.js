@@ -87,9 +87,9 @@ async function createTeacher(req, res) {
             const transactionalTeacherModel = new teacher_model_1.default(connection);
             const transactionalUserModel = new user_model_1.default(connection);
             const teacherId = await transactionalTeacherModel.createTeacher({
-                first_name,
-                middle_name,
-                last_name,
+                first_name: first_name ?? null,
+                middle_name: middle_name ?? null,
+                last_name: last_name ?? null,
                 email: normalizedEmail,
             });
             const defaultPassword = await bcrypt_1.default.hash("12345", 10);

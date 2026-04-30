@@ -56,7 +56,7 @@ async function requestPasswordReset(req, res) {
             console.error("Failed to log password reset request", e);
         }
         const resetLink = `${getClientSideUrl()}/reset-password?token=${encodeURIComponent(token)}`;
-        const smtpConfigured = Boolean(process.evn.SMTP_SERVICE);
+        const smtpConfigured = Boolean(process.env.SMTP_SERVICE);
         Boolean(process.env.SMTP_USER) &&
             Boolean(process.env.SMTP_PASS);
         if (smtpConfigured) {

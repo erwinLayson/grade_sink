@@ -14,9 +14,17 @@ export async function getAllStudents(req: Request, res: Response) {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
     const offset = parseInt(req.query.offset as string) || 0;
+    const level = req.query.level as string | undefined; // Optional level filter
 
     const studentService = new StudentService(new StudentModel(pool));
-    const students = await studentService.getAllStudents();
+    let students = await studentService.getAllStudents();
+    
+    // Filter by level if provided (case-insensitive)
+    if (level) {
+      students = students.filter(
+        s => s.level?.toLowerCase().replace(/\s+/g, '') === level.toLowerCase().replace(/\s+/g, '')
+      );
+    }
     
     const paginatedStudents = students.slice(offset, offset + limit);
     

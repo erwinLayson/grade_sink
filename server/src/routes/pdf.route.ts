@@ -1,9 +1,16 @@
 import express from "express";
 import validateToken from "../middleware/validateToken";
-import { generateClassStudentPDFs } from "../controller/pdf.controller";
+import allowedRole from "../middleware/allowedRole";
+import { ROLES } from "../constant/userRole";
+import { getReport } from "../controller/pdf.controller";
 
 const router = express.Router();
 
-router.post("/classes/:classId/generate-pdfs", validateToken, generateClassStudentPDFs);
+router.get(
+	"/classes/:classId/generate-pdfs",
+	validateToken,
+	allowedRole([ROLES.TEACHER, ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+	getReport,
+);
 
 export default router;

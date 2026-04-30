@@ -105,13 +105,17 @@ export default function ManageClasses() {
 
   // Add student form
   const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState("");
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
 
   // Add subject form
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [subjectTeachers, setSubjectTeachers] = useState<any[]>([]);
-  const [selectedSubjectTeacher, setSelectedSubjectTeacher] = useState("");
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
+  const [subjectTeachersBySubject, setSubjectTeachersBySubject] = useState<
+    Record<number, any[]>
+  >({});
+  const [selectedSubjectTeachers, setSelectedSubjectTeachers] = useState<
+    Record<number, string>
+  >({});
 
   // Edit subject teacher form
   const [editingSubject, setEditingSubject] = useState<ClassSubject | null>(
@@ -135,7 +139,6 @@ export default function ManageClasses() {
   useEffect(() => {
     fetchData();
   }, []);
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -291,28 +294,32 @@ export default function ManageClasses() {
   function handleAddStudentClick() {
     setModalType("addStudent");
     setOpenModal(true);
-    setSelectedStudent("");
+    setSelectedStudents([]);
   }
 
   async function handleAddStudent(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!selectedStudent) {
-      toast.warning("Please select a student");
+    if (selectedStudents.length === 0) {
+      toast.warning("Please select at least one student");
       return;
     }
 
     try {
-      await axios.post(
-        "http://localhost:7000/class-students",
-        {
-          student_id: parseInt(selectedStudent),
-          class_id: selectedClassDetail?.id,
-        },
-        { withCredentials: true },
+      await Promise.all(
+        selectedStudents.map((studentId) =>
+          axios.post(
+            "http://localhost:7000/class-students",
+            {
+              student_id: studentId,
+              class_id: selectedClassDetail?.id,
+            },
+            { withCredentials: true },
+          ),
+        ),
       );
 
-      toast.success("Student added successfully");
+      toast.success("Students added successfully");
       handleCloseModal();
       await fetchClassDetails(selectedClassDetail!.id);
     } catch (e) {
@@ -326,63 +333,104 @@ export default function ManageClasses() {
   function handleAddSubjectClick() {
     setModalType("addSubject");
     setOpenModal(true);
-    setSelectedSubject("");
-    setSelectedSubjectTeacher("");
-    setSubjectTeachers([]);
+    setSelectedSubjectIds([]);
+    setSubjectTeachersBySubject({});
+    setSelectedSubjectTeachers({});
   }
 
-  async function handleSubjectChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const subjectId = e.target.value;
-    setSelectedSubject(subjectId);
+  async function loadTeachersForSubject(subjectId: number) {
+    if (!subjectId || subjectTeachersBySubject[subjectId]) {
+      return;
+    }
 
-    if (subjectId) {
-      try {
-        const response = await axios.get(
-          `http://localhost:7000/teacher-subjects?limit=1000`,
-          { withCredentials: true },
-        );
+    try {
+      const response = await axios.get(
+        `http://localhost:7000/teacher-subjects?limit=1000`,
+        { withCredentials: true },
+      );
 
-        const allTeacherSubjects = response.data?.data || [];
-        const teachersForSubject = allTeacherSubjects
-          .filter((ts: any) => ts.subject_id === parseInt(subjectId))
-          .map((ts: any) => {
-            const teacher = teachers.find((t) => t.id === ts.teacher_id);
-            return {
-              id: ts.teacher_id,
-              name: teacher
-                ? `${teacher.first_name} ${teacher.last_name}`
-                : "Unknown",
-            };
-          });
+      const allTeacherSubjects = response.data?.data || [];
+      const teachersForSubject = allTeacherSubjects
+        .filter((ts: any) => ts.subject_id === subjectId)
+        .map((ts: any) => {
+          const teacher = teachers.find((t) => t.id === ts.teacher_id);
+          return {
+            id: ts.teacher_id,
+            name: teacher
+              ? `${teacher.first_name} ${teacher.last_name}`
+              : "Unknown",
+          };
+        });
 
-        setSubjectTeachers(teachersForSubject);
-        setSelectedSubjectTeacher("");
-      } catch (e) {
-        console.error("Error fetching teachers for subject", e);
-      }
+      setSubjectTeachersBySubject((current) => ({
+        ...current,
+        [subjectId]: teachersForSubject,
+      }));
+    } catch (e) {
+      console.error("Error fetching teachers for subject", e);
+    }
+  }
+
+  async function handleSubjectToggle(subjectId: number, checked: boolean) {
+    setSelectedSubjectIds((current) =>
+      checked
+        ? [...current, subjectId]
+        : current.filter((id) => id !== subjectId),
+    );
+
+    if (checked) {
+      await loadTeachersForSubject(subjectId);
+    } else {
+      setSelectedSubjectTeachers((current) => {
+        const next = { ...current };
+        delete next[subjectId];
+        return next;
+      });
     }
   }
 
   async function handleAddSubject(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!selectedSubject || !selectedSubjectTeacher) {
-      toast.warning("Please select a subject and teacher");
+    if (selectedSubjectIds.length === 0) {
+      toast.warning("Please select at least one subject");
+      return;
+    }
+
+    const missingTeacherSubject = selectedSubjectIds.find(
+      (subjectId) => !selectedSubjectTeachers[subjectId],
+    );
+
+    if (missingTeacherSubject) {
+      toast.warning("Please select a teacher for each selected subject");
+      return;
+    }
+
+    const alreadyAssigned = selectedSubjectIds.filter((subjectId) =>
+      classSubjects.some((subject) => subject.subject_id === subjectId),
+    );
+
+    if (alreadyAssigned.length > 0) {
+      toast.warning("One or more selected subjects are already assigned");
       return;
     }
 
     try {
-      await axios.post(
-        "http://localhost:7000/class-subjects",
-        {
-          class_id: selectedClassDetail?.id,
-          subject_id: parseInt(selectedSubject),
-          teacher_id: parseInt(selectedSubjectTeacher),
-        },
-        { withCredentials: true },
+      await Promise.all(
+        selectedSubjectIds.map((subjectId) =>
+          axios.post(
+            "http://localhost:7000/class-subjects",
+            {
+              class_id: selectedClassDetail?.id,
+              subject_id: subjectId,
+              teacher_id: parseInt(selectedSubjectTeachers[subjectId]),
+            },
+            { withCredentials: true },
+          ),
+        ),
       );
 
-      toast.success("Subject added successfully");
+      toast.success("Subjects added successfully");
       handleCloseModal();
       await fetchClassDetails(selectedClassDetail!.id);
     } catch (e) {
@@ -395,7 +443,7 @@ export default function ManageClasses() {
 
   async function handleEditSubjectTeacherClick(subject: ClassSubject) {
     setEditingSubject(subject);
-    setEditTeacherId(subject.teacher_id.toString());
+    setEditTeacherId(subject.teacher_id ? subject.teacher_id.toString() : "");
     setModalType("editSubjectTeacher");
     setOpenModal(true);
 
@@ -586,9 +634,10 @@ export default function ManageClasses() {
     setSchoolLevel("");
     setTeacherId("");
     setSelectedClass(null);
-    setSelectedStudent("");
-    setSelectedSubject("");
-    setSelectedSubjectTeacher("");
+    setSelectedStudents([]);
+    setSelectedSubjectIds([]);
+    setSelectedSubjectTeachers({});
+    setSubjectTeachersBySubject({});
     setEditingSubject(null);
     setEditTeacherId("");
     setAvailableTeachersForSubject([]);
@@ -660,26 +709,65 @@ export default function ManageClasses() {
               {modalType === "addStudent" && (
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Student *
+                    Students *
                   </label>
-                  <select
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                    value={selectedStudent}
-                    onChange={(e) => setSelectedStudent(e.target.value)}
-                    required
-                  >
-                    <option value="">Select a student</option>
+                  <div className="max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-3">
                     {availableStudents
                       .filter(
-                        (s) =>
-                          !classStudents.some((cs) => cs.student_id === s.id),
+                        (student) =>
+                          !classStudents.some(
+                            (cs) => cs.student_id === student.id,
+                          ),
                       )
-                      .map((student) => (
-                        <option key={student.id} value={student.id}>
-                          {student.first_name} {student.last_name}
-                        </option>
-                      ))}
-                  </select>
+                      .map((student) => {
+                        const checked = selectedStudents.includes(student.id);
+
+                        return (
+                          <label
+                            key={student.id}
+                            className="flex cursor-pointer items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-sm transition hover:bg-sky-50"
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                              checked={checked}
+                              onChange={(event) => {
+                                const isChecked = event.target.checked;
+                                setSelectedStudents((current) =>
+                                  isChecked
+                                    ? [...current, student.id]
+                                    : current.filter((id) => id !== student.id),
+                                );
+                              }}
+                            />
+                            <div>
+                              <p className="font-medium text-slate-900">
+                                {student.first_name} {student.last_name}
+                              </p>
+                              <p className="text-sm text-slate-500">
+                                Student ID: {student.student_id} • Level:{" "}
+                                {student.level}
+                              </p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    {availableStudents.filter(
+                      (student) =>
+                        !classStudents.some(
+                          (cs) => cs.student_id === student.id,
+                        ),
+                    ).length === 0 && (
+                      <p className="px-4 py-6 text-center text-sm text-slate-500">
+                        No available students to add.
+                      </p>
+                    )}
+                  </div>
+                  {selectedStudents.length > 0 && (
+                    <p className="mt-2 text-sm font-medium text-slate-600">
+                      {selectedStudents.length} student(s) selected
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -687,49 +775,121 @@ export default function ManageClasses() {
                 <>
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Subject *
+                      Subjects *
                     </label>
-                    <select
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                      value={selectedSubject}
-                      onChange={handleSubjectChange}
-                      required
-                    >
-                      <option value="">Select a subject</option>
+                    <div className="max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-3">
                       {availableSubjects
                         .filter(
-                          (s) =>
-                            !classSubjects.some((cs) => cs.subject_id === s.id),
+                          (subject) =>
+                            !classSubjects.some(
+                              (cs) => cs.subject_id === subject.id,
+                            ),
                         )
-                        .map((subject) => (
-                          <option key={subject.id} value={subject.id}>
-                            {subject.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  {subjectTeachers.length > 0 && (
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
-                        Teacher *
-                      </label>
-                      <select
-                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                        value={selectedSubjectTeacher}
-                        onChange={(e) =>
-                          setSelectedSubjectTeacher(e.target.value)
-                        }
-                        required
-                      >
-                        <option value="">Select a teacher</option>
-                        {subjectTeachers.map((teacher) => (
-                          <option key={teacher.id} value={teacher.id}>
-                            {teacher.name}
-                          </option>
-                        ))}
-                      </select>
+                        .map((subject) => {
+                          const checked = selectedSubjectIds.includes(
+                            subject.id,
+                          );
+
+                          return (
+                            <label
+                              key={subject.id}
+                              className="flex cursor-pointer items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-sm transition hover:bg-sky-50"
+                            >
+                              <input
+                                type="checkbox"
+                                className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                                checked={checked}
+                                onChange={(event) =>
+                                  handleSubjectToggle(
+                                    subject.id,
+                                    event.target.checked,
+                                  )
+                                }
+                              />
+                              <div>
+                                <p className="font-medium text-slate-900">
+                                  {subject.name}
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                  Code: {subject.code}
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      {availableSubjects.filter(
+                        (subject) =>
+                          !classSubjects.some(
+                            (cs) => cs.subject_id === subject.id,
+                          ),
+                      ).length === 0 && (
+                        <p className="px-4 py-6 text-center text-sm text-slate-500">
+                          No available subjects to add.
+                        </p>
+                      )}
                     </div>
-                  )}
+                    {selectedSubjectIds.length > 0 && (
+                      <p className="mt-2 text-sm font-medium text-slate-600">
+                        {selectedSubjectIds.length} subject(s) selected
+                      </p>
+                    )}
+                  </div>
+                  {selectedSubjectIds.map((subjectId) => {
+                    const subject = availableSubjects.find(
+                      (item) => item.id === subjectId,
+                    );
+                    const subjectTeachers =
+                      subjectTeachersBySubject[subjectId] || [];
+
+                    return (
+                      <div
+                        key={subjectId}
+                        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                      >
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                          Teacher for {subject?.name || `Subject ${subjectId}`}{" "}
+                          *
+                        </label>
+                        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          {subjectTeachers.length > 0 ? (
+                            subjectTeachers.map((teacher) => {
+                              const isChecked =
+                                selectedSubjectTeachers[subjectId] ===
+                                teacher.id.toString();
+
+                              return (
+                                <label
+                                  key={teacher.id}
+                                  className="flex cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2 shadow-sm transition hover:bg-sky-50"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                                    checked={isChecked}
+                                    onChange={(event) => {
+                                      setSelectedSubjectTeachers((current) => ({
+                                        ...current,
+                                        [subjectId]: event.target.checked
+                                          ? teacher.id.toString()
+                                          : "",
+                                      }));
+                                    }}
+                                  />
+                                  <span className="text-sm font-medium text-slate-800">
+                                    {teacher.name}
+                                  </span>
+                                </label>
+                              );
+                            })
+                          ) : (
+                            <p className="px-1 py-2 text-sm text-slate-500">
+                              No teachers available for this subject
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </>
               )}
 

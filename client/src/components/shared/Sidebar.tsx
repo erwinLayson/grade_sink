@@ -2,6 +2,7 @@ import { useContext } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { UserContext } from "../../context/userContext";
+import { useNavigate } from "react-router-dom";
 
 // context
 import { useSideBar } from "../../hooks/useSidebar";
@@ -20,6 +21,8 @@ export default function SideBar({
   admin = DEFAULT_NAV_CONFIG.admin,
   super_admin = DEFAULT_NAV_CONFIG.super_admin,
 }: Partial<SideBarProps> = {}) {
+  const navigate = useNavigate();
+
   const userContext = useContext(UserContext);
   const user = userContext?.user;
   const setUser = userContext?.setUser;
@@ -53,7 +56,7 @@ export default function SideBar({
       localStorage.removeItem("userCredential");
       setUser?.(null);
       toast.success("Logged out successfully");
-      window.location.replace("/login");
+      navigate("/login");
     }
   }
 

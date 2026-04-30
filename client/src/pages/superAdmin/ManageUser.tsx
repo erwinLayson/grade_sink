@@ -146,6 +146,12 @@ export default function ManageUser() {
       userDetails.role = role;
     }
 
+    // Prevent admin users from assigning the Super Admin role (client-side guard)
+    if (user && user.role === "admin" && userDetails.role === "super_admin") {
+      toast.error("Insufficient privileges to assign Super Admin role");
+      return;
+    }
+
     try {
       let result;
 
@@ -278,8 +284,15 @@ export default function ManageUser() {
                   <option value="">Select Role</option>
                   <option value="admin">Admin</option>
                   <option value="teacher">Teacher</option>
-                  <option value="super_admin">Super Admin</option>
+                  <option value="super_admin" disabled={user?.role === "admin"}>
+                    Super Admin
+                  </option>
                 </select>
+                {user && user.role === "admin" && (
+                  <p className="text-xs text-rose-600 mt-1">
+                    You do not have permission to assign the Super Admin role.
+                  </p>
+                )}
               </div>
             )}
 

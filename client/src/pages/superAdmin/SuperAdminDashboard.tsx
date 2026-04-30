@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import useGetUser from "../../hooks/useGetUser";
 
 interface DashboardStats {
   totalUsers: number;
@@ -25,7 +24,6 @@ export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { users } = useGetUser();
 
   useEffect(() => {
     const fetchStats = async () => {

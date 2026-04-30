@@ -49,7 +49,10 @@ export async function createClass(req: Request, res: Response) {
     }
 
     const classService = new ClassService(new ClassModel(pool));
-    const result = await classService.createClass({ name, section, school_year, school_level, teacher_id });
+    const payload: ClassDTO = { name, section, school_year, school_level };
+    if (typeof teacher_id !== "undefined") payload.teacher_id = teacher_id as number | null;
+
+    const result = await classService.createClass(payload);
     
     if (result) {
       return res.status(201).json({ success: true, msg: "Class created successfully", data: { id: result } });

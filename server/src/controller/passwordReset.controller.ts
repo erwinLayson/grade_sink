@@ -62,7 +62,7 @@ export async function requestPasswordReset(req: Request<any, any, { email: strin
     const resetLink = `${getClientSideUrl()}/reset-password?token=${encodeURIComponent(token)}`;
 
     const smtpConfigured =
-      Boolean(process.evn.SMTP_SERVICE)
+      Boolean(process.env.SMTP_SERVICE)
       Boolean(process.env.SMTP_USER) &&
       Boolean(process.env.SMTP_PASS);
 

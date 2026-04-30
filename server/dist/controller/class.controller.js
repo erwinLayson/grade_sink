@@ -49,7 +49,10 @@ async function createClass(req, res) {
             return res.status(400).json({ success: false, msg: "Name, section, school_year, and school_level are required" });
         }
         const classService = new class_service_1.default(new class_model_1.default(dbConnection_config_1.pool));
-        const result = await classService.createClass({ name, section, school_year, school_level, teacher_id });
+        const payload = { name, section, school_year, school_level };
+        if (typeof teacher_id !== "undefined")
+            payload.teacher_id = teacher_id;
+        const result = await classService.createClass(payload);
         if (result) {
             return res.status(201).json({ success: true, msg: "Class created successfully", data: { id: result } });
         }

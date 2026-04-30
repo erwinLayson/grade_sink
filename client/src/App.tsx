@@ -20,6 +20,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import GradeManagement from "./pages/GradeManagement";
 import MyClasses from "./pages/teachers/MyClasses";
 import TeacherProfile from "./pages/teachers/Profile";
+import ClassReports from "./pages/teachers/ClassReports";
 
 // super Admin
 import {
@@ -81,6 +82,7 @@ export default function App() {
                     element={<TeacherDashboard />}
                   />
                   <Route path="teacher/my-classes" element={<MyClasses />} />
+                  <Route path="teacher/reports" element={<ClassReports />} />
                   <Route path="teacher/profile" element={<TeacherProfile />} />
                   <Route
                     path="grade-management"

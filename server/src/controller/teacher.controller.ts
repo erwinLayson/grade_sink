@@ -91,9 +91,9 @@ export async function createTeacher(req: Request, res: Response) {
       const transactionalUserModel = new UserModel(connection as unknown as typeof pool);
 
       const teacherId = await transactionalTeacherModel.createTeacher({
-        first_name,
-        middle_name,
-        last_name,
+        first_name: first_name ?? null,
+        middle_name: middle_name ?? null,
+        last_name: last_name ?? null,
         email: normalizedEmail,
       });
 

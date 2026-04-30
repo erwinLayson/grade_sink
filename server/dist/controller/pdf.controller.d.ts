@@ -1,4 +1,3 @@
 import { Request, Response } from "express";
-export declare function generateClassStudentPDFs(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
-export default generateClassStudentPDFs;
+export declare function getReport(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
 //# sourceMappingURL=pdf.controller.d.ts.map

@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import ActivityService from "../service/activity.service";
 import ActivityModel from "../model/activity.model";
 import { resolveClientIp } from "../middleware/activityLogger";
+import loginLimiter, { getLoginRateLimitKey } from "../middleware/loginLimiter";
  
 export const authUser = async (req: Request<any, any, {email: string, password: string}>, res: Response) => {
   try {
@@ -79,6 +80,12 @@ export const authUser = async (req: Request<any, any, {email: string, password: 
       });
     } catch (e) {
       console.error("Failed to record login activity", e);
+    }
+
+    try {
+      await loginLimiter.resetKey(getLoginRateLimitKey(req));
+    } catch (e) {
+      console.error("Failed to reset login limiter after successful login", e);
     }
 
     return res.status(200).json({

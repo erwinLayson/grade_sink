@@ -1,13 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { UserContext } from "../../context/userContext";
-import {
-  FaArrowRight,
-  FaBook,
-  FaSchool,
-  FaTimes,
-  FaUsers,
-} from "react-icons/fa";
+import { FaArrowRight, FaBook, FaSchool, FaTimes } from "react-icons/fa";
 
 interface TeacherClass {
   id: number;
@@ -81,7 +75,8 @@ function PanelCard({
 }
 
 export default function MyClasses() {
-  const { user } = useContext(UserContext);
+  const userContext = useContext(UserContext);
+  const user = userContext?.user;
   const [classes, setClasses] = useState<TeacherClass[]>([]);
   const [subjects, setSubjects] = useState<TeacherSubject[]>([]);
   const [handledClasses, setHandledClasses] = useState<TeacherClass[]>([]);

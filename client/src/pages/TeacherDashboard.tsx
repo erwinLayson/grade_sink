@@ -2,36 +2,15 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { UserContext } from "../context/userContext";
-import { FaArrowRight, FaChartBar, FaSchool, FaUsers, FaDownload, FaSpinner, FaTimes, FaCheck } from "react-icons/fa";
+import {
+  FaChartBar,
+  FaSchool,
+  FaUsers,
+  FaDownload,
+  FaSpinner,
+  FaTimes,
+} from "react-icons/fa";
 import { useToastHelper } from "../context/ToastContext";
-
-interface TeacherClass {
-  id: number;
-  name: string;
-  section: string;
-  school_year?: string;
-  school_level?: string;
-}
-
-interface Student {
-  id: number;
-  student_id: number;
-  first_name: string;
-  last_name: string;
-  sex?: string;
-}
-
-interface StudentGrade {
-  id: number;
-  student_id: number;
-  grade: number;
-  quarter: string;
-}
-
-type StudentPerformance = {
-  student: Student;
-  gradeValue: number | null;
-};
 
 function MetricCard({
   icon,
@@ -90,11 +69,43 @@ const GRADE_BUCKETS = [
   { label: "95+", min: 95, max: Number.POSITIVE_INFINITY },
 ] as const;
 
+// Local type definitions
+interface TeacherClass {
+  id: number;
+  name: string;
+  section: string;
+  school_year?: string;
+  school_level?: string;
+}
+
+interface Student {
+  id: number;
+  student_id: number;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  sex?: string;
+  lrn?: string;
+}
+
+interface StudentGrade {
+  id: number;
+  grade: number;
+  subject_id: number;
+  quarter: string;
+}
+
+interface StudentPerformance {
+  student: Student;
+  gradeValue: number | null;
+}
+
 export default function TeacherDashboard() {
-  const { user } = useContext(UserContext);
+  const userCtx = useContext(UserContext);
+  const user = userCtx?.user ?? null;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [teacherId, setTeacherId] = useState<number | null>(null);
+  // teacherId removed — not used elsewhere; resolvedTeacherId used locally
   const [advisoryClass, setAdvisoryClass] = useState<TeacherClass | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [studentGrades, setStudentGrades] = useState<
@@ -106,7 +117,9 @@ export default function TeacherDashboard() {
 
   // PDF generation states
   const [showPdfModal, setShowPdfModal] = useState(false);
-  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<number>>(new Set());
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<number>>(
+    new Set(),
+  );
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const toast = useToastHelper();
 
@@ -129,7 +142,7 @@ export default function TeacherDashboard() {
           resolvedTeacherId = teacherResponse.data?.data?.id ?? user.id;
         }
 
-        setTeacherId(resolvedTeacherId);
+        // resolvedTeacherId available locally if needed
 
         const classResponse = await axios.get(
           `http://localhost:7000/class-teachers/teacher/${resolvedTeacherId}?limit=1000`,
@@ -150,14 +163,17 @@ export default function TeacherDashboard() {
           { withCredentials: true },
         );
 
-        const advisoryStudents = studentsResponse.data?.data || [];
+        const advisoryStudents: Student[] = studentsResponse.data?.data || [];
         setStudents(advisoryStudents);
 
         const gradeResponses = await Promise.all(
           advisoryStudents.map((student: Student) =>
-            axios.get(`http://localhost:7000/grades/student/${student.id}`, {
-              withCredentials: true,
-            }),
+            axios.get(
+              `http://localhost:7000/grades/student/${student.student_id}`,
+              {
+                withCredentials: true,
+              },
+            ),
           ),
         );
 
@@ -271,28 +287,7 @@ export default function TeacherDashboard() {
           >
             Grade Management
           </Link>
-        {advisoryClass && (
-          <button
-            onClick={() => {
-              setSelectedStudentIds(new Set(students.map(s => s.id)));
-              setShowPdfModal(true);
-            }}
-            disabled={isGeneratingPdf}
-            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-white font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGeneratingPdf ? (
-              <>
-                <FaSpinner className="animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <FaDownload size={16} />
-                Download Grade PDFs
-              </>
-            )}
-          </button>
-        )}
+          {/* Generate report moved to sidebar Class Reports page */}
         </div>
       </div>
 
@@ -493,7 +488,9 @@ export default function TeacherDashboard() {
           <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="sticky top-0 border-b border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Select Students for PDF Generation</h2>
+              <h2 className="text-xl font-bold text-slate-900">
+                Select Students for PDF Generation
+              </h2>
               <button
                 onClick={() => setShowPdfModal(false)}
                 disabled={isGeneratingPdf}
@@ -507,7 +504,11 @@ export default function TeacherDashboard() {
             <div className="p-6 space-y-2">
               <div className="mb-4 flex gap-2">
                 <button
-                  onClick={() => setSelectedStudentIds(new Set(students.map(s => s.id)))}
+                  onClick={() =>
+                    setSelectedStudentIds(
+                      new Set(students.map((s) => s.student_id)),
+                    )
+                  }
                   className="text-sm px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
                 >
                   Select All
@@ -519,24 +520,24 @@ export default function TeacherDashboard() {
                   Deselect All
                 </button>
               </div>
-              
+
               {students.map((student) => (
                 <div
                   key={student.id}
                   className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
                   onClick={() => {
                     const newSet = new Set(selectedStudentIds);
-                    if (newSet.has(student.id)) {
-                      newSet.delete(student.id);
+                    if (newSet.has(student.student_id)) {
+                      newSet.delete(student.student_id);
                     } else {
-                      newSet.add(student.id);
+                      newSet.add(student.student_id);
                     }
                     setSelectedStudentIds(newSet);
                   }}
                 >
                   <input
                     type="checkbox"
-                    checked={selectedStudentIds.has(student.id)}
+                    checked={selectedStudentIds.has(student.student_id)}
                     onChange={() => {}}
                     className="w-4 h-4 text-indigo-600 rounded cursor-pointer"
                   />
@@ -544,7 +545,9 @@ export default function TeacherDashboard() {
                     <p className="font-semibold text-slate-900">
                       {student.first_name} {student.last_name}
                     </p>
-                    <p className="text-xs text-slate-500">ID: {student.student_id}</p>
+                    <p className="text-xs text-slate-500">
+                      ID: {student.student_id}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -565,18 +568,22 @@ export default function TeacherDashboard() {
                     toast.warning("Please select at least one student");
                     return;
                   }
-                  
+
                   try {
                     setIsGeneratingPdf(true);
-                    toast.info(`Generating PDFs for ${selectedStudentIds.size} student(s)...`);
-                    
+                    toast.info(
+                      `Generating PDFs for ${selectedStudentIds.size} student(s)...`,
+                    );
+
                     const resp = await axios.post(
                       `http://localhost:7000/classes/${advisoryClass?.id}/generate-pdfs`,
                       { studentIds: Array.from(selectedStudentIds) },
                       { withCredentials: true, responseType: "blob" },
                     );
 
-                    const blob = new Blob([resp.data], { type: "application/zip" });
+                    const blob = new Blob([resp.data], {
+                      type: "application/zip",
+                    });
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;
@@ -585,12 +592,16 @@ export default function TeacherDashboard() {
                     a.click();
                     a.remove();
                     window.URL.revokeObjectURL(url);
-                    
-                    toast.success(`Successfully generated ${selectedStudentIds.size} PDF(s)`);
+
+                    toast.success(
+                      `Successfully generated ${selectedStudentIds.size} PDF(s)`,
+                    );
                     setShowPdfModal(false);
                   } catch (err) {
                     console.error(err);
-                    toast.error("Failed to generate PDFs. See console for details.");
+                    toast.error(
+                      "Failed to generate PDFs. See console for details.",
+                    );
                   } finally {
                     setIsGeneratingPdf(false);
                   }

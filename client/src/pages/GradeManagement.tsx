@@ -203,9 +203,12 @@ export default function GradeManagement() {
     try {
       const responses = await Promise.all(
         classStudents.map((student) =>
-          axios.get(`http://localhost:7000/grades/student/${student.id}`, {
-            withCredentials: true,
-          }),
+          axios.get(
+            `http://localhost:7000/grades/student/${student.student_id}`,
+            {
+              withCredentials: true,
+            },
+          ),
         ),
       );
 
@@ -270,7 +273,7 @@ export default function GradeManagement() {
             !existingGrades[student.id] && grades[student.id] !== undefined,
         )
         .map((student) => ({
-          student_id: student.id,
+          student_id: student.student_id,
           subject_id: parseInt(selectedSubject),
           teacher_id: teacherId ?? user?.id,
           grade: parseInt(grades[student.id].toString()),
